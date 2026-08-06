@@ -1,0 +1,6 @@
+# Copy this file to key.properties and keep the real file outside version control.
+# Paths are resolved from mobile/android.
+storeFile=../keystores/fandoogh-release.jks
+storePassword=replace-with-a-secret
+keyAlias=fandoogh-release
+keyPassword=replace-with-a-secret

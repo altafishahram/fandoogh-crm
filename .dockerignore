@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.vscode
+backend/.env
+backend/node_modules
+backend/storage/logs
+backend/vendor
+mobile/.dart_tool
+mobile/.idea
+mobile/build
