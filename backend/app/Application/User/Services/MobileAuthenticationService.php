@@ -40,7 +40,7 @@ final readonly class MobileAuthenticationService
         $passwordHash = $user instanceof User ? $user->password : self::DUMMY_PASSWORD_HASH;
         $passwordMatches = Hash::check($password, $passwordHash);
 
-        if (! $user instanceof User || ! $passwordMatches || ! $this->isEligibleAgent($user)) {
+        if (! $user instanceof User || ! $passwordMatches || ! $this->isEligibleMobileUser($user)) {
             RateLimiter::hit($limiterKey, self::DECAY_SECONDS);
 
             throw new InvalidCredentialsException('ایمیل یا رمز عبور درست نیست.');
@@ -76,13 +76,13 @@ final readonly class MobileAuthenticationService
         return $user->loadMissing(['agency', 'roles.permissions']);
     }
 
-    private function isEligibleAgent(User $user): bool
+    private function isEligibleMobileUser(User $user): bool
     {
         if (! $user->is_active
             || $user->trashed()
             || $user->agency_id === null
             || $user->roles()->count() !== 1
-            || ! $user->hasRole(RoleName::Agent->value)) {
+            || ! $user->hasAnyRole([RoleName::Agent->value, RoleName::AgencyManager->value])) {
             return false;
         }
 

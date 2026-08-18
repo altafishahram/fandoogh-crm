@@ -12,5 +12,7 @@ final readonly class UpdateCustomerData
     public function __construct(
         public array $attributes,
         public CarbonImmutable $expectedUpdatedAt,
+        public ?int $expectedVersion = null,
+        public ?string $reason = null,
     ) {}
 }

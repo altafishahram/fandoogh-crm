@@ -12,6 +12,7 @@ use App\Filament\Control\Resources\Users\Pages\CreateUser;
 use App\Filament\Control\Resources\Users\Pages\EditUser;
 use App\Filament\Control\Resources\Users\Pages\ListUsers;
 use App\Filament\Control\Resources\Users\Pages\ViewUser;
+use App\Filament\Shared\Support\PersianDate;
 use App\Filament\Shared\Support\PersianLabels;
 use App\Filament\Shared\Support\ResourceForms;
 use App\Models\User;
@@ -55,7 +56,7 @@ final class UserResource extends Resource
         return $schema->components([
             TextEntry::make('agency.name')->label(PersianLabels::field('agency.name')), TextEntry::make('name')->label(PersianLabels::field('name')), TextEntry::make('email')->label(PersianLabels::field('email')),
             TextEntry::make('phone')->label(PersianLabels::field('phone'))->placeholder('-'), IconEntry::make('is_active')->label(PersianLabels::field('is_active'))->boolean(),
-            IconEntry::make('must_change_password')->label(PersianLabels::field('must_change_password'))->boolean(), TextEntry::make('last_login_at')->label(PersianLabels::field('last_login_at'))->dateTime()->placeholder('-'),
+            IconEntry::make('must_change_password')->label(PersianLabels::field('must_change_password'))->boolean(), TextEntry::make('last_login_at')->label(PersianLabels::field('last_login_at'))->formatStateUsing(PersianDate::format(...))->placeholder('—'),
         ])->columns(3);
     }
 
@@ -64,7 +65,7 @@ final class UserResource extends Resource
         return $table->columns([
             TextColumn::make('agency.name')->label(PersianLabels::field('agency.name'))->searchable()->sortable(), TextColumn::make('name')->label(PersianLabels::field('name'))->searchable()->sortable(),
             TextColumn::make('email')->label(PersianLabels::field('email'))->searchable(), TextColumn::make('phone')->label(PersianLabels::field('phone'))->searchable(),
-            IconColumn::make('is_active')->label(PersianLabels::field('is_active'))->boolean(), TextColumn::make('last_login_at')->label(PersianLabels::field('last_login_at'))->dateTime()->sortable(),
+            IconColumn::make('is_active')->label(PersianLabels::field('is_active'))->boolean(), TextColumn::make('last_login_at')->label(PersianLabels::field('last_login_at'))->formatStateUsing(PersianDate::format(...))->sortable(),
         ])->filters([
             SelectFilter::make('agency_id')->label(PersianLabels::field('agency_id'))->relationship('agency', 'name'),
             TernaryFilter::make('is_active')->label('وضعیت فعالیت'),

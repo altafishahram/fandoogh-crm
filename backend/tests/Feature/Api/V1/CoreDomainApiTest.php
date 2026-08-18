@@ -6,6 +6,7 @@ namespace Tests\Feature\Api\V1;
 
 use App\Application\Property\Services\CreatePropertyService;
 use App\Domain\Tenancy\TenantContext;
+use App\Domain\User\Enums\PermissionName;
 use App\Models\Owner;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +59,7 @@ final class CoreDomainApiTest extends DomainTestCase
     public function test_agent_can_create_and_update_assigned_customer(): void
     {
         ['agent' => $agent] = $this->tenant();
+        $agent->givePermissionTo(PermissionName::CustomersChangeStatus->value);
         Sanctum::actingAs($agent, ['mobile']);
 
         $response = $this->postJson('/api/v1/customers', [

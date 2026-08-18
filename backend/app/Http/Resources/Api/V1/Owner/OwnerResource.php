@@ -14,6 +14,7 @@ final class OwnerResource extends JsonResource
     {
         return [
             'id' => $this->resource->getKey(),
+            'full_name' => $this->resource->full_name,
             'owner_type' => $this->resource->owner_type->value,
             'first_name' => $this->resource->first_name,
             'last_name' => $this->resource->last_name,

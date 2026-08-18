@@ -22,10 +22,27 @@ final class CoreDomainSchemaTest extends DomainTestCase
 
         $this->assertTrue(Schema::hasColumns('properties', [
             'agency_id', 'code', 'transaction_type', 'status', 'currency_code', 'deleted_at',
+            'has_master_bathroom', 'heating_type', 'cooling_type', 'building_orientation',
+            'deed_type', 'has_loan', 'is_exchangeable', 'has_pool', 'has_jacuzzi', 'has_sauna',
+            'building_type', 'structure_type', 'has_water', 'has_electricity', 'has_gas',
+            'telephone_line_count', 'land_area', 'building_area', 'can_aggregate', 'land_frontage',
         ]));
         $this->assertTrue(Schema::hasColumns('customers', [
             'agency_id', 'assigned_agent_id', 'intent', 'status', 'converted_property_id',
+            'toilet_types', 'has_master_bathroom', 'cabinet_type', 'heating_type', 'cooling_type',
+            'flooring_type', 'renovation_status', 'building_orientation', 'deed_type', 'has_loan',
+            'is_exchangeable', 'has_pool', 'has_jacuzzi', 'has_sauna',
+            'building_type', 'structure_type', 'has_water', 'has_electricity', 'has_gas',
+            'telephone_line_count', 'land_area', 'building_area', 'min_parking_spaces',
+            'has_parking', 'has_storage_room', 'owner_resides', 'has_elevator', 'has_balcony',
         ]));
+
+        $statusLength = DB::table('information_schema.columns')
+            ->where('table_schema', DB::getDatabaseName())
+            ->where('table_name', 'customers')
+            ->where('column_name', 'status')
+            ->value('character_maximum_length');
+        $this->assertGreaterThanOrEqual(32, (int) $statusLength);
     }
 
     public function test_owner_identity_number_is_encrypted_at_rest(): void

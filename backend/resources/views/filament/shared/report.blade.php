@@ -2,11 +2,11 @@
     <form method="GET" class="flex flex-wrap items-end gap-4">
         <label class="grid gap-1">
             <span class="text-sm font-medium">از تاریخ</span>
-            <input name="from" type="date" value="{{ $from }}" required class="fi-input rounded-lg border-gray-300" />
+            <input name="from" type="text" value="{{ $from }}" placeholder="۱۷ مرداد ۱۴۰۵" required class="fi-input rounded-lg border-gray-300" />
         </label>
         <label class="grid gap-1">
             <span class="text-sm font-medium">تا تاریخ</span>
-            <input name="to" type="date" value="{{ $to }}" required class="fi-input rounded-lg border-gray-300" />
+            <input name="to" type="text" value="{{ $to }}" placeholder="۱۷ مرداد ۱۴۰۵" required class="fi-input rounded-lg border-gray-300" />
         </label>
         <x-filament::button type="submit">تهیه گزارش</x-filament::button>
     </form>

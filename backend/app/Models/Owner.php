@@ -39,7 +39,7 @@ class Owner extends Model
     protected $fillable = [
         'owner_type', 'first_name', 'last_name', 'company_name', 'mobile', 'phone', 'email',
         'identity_number_encrypted', 'address_line_1', 'address_line_2', 'city', 'province',
-        'postal_code', 'notes', 'created_by_user_id',
+        'postal_code', 'notes', 'created_by_user_id', 'full_name',
     ];
 
     /** @return BelongsTo<User, $this> */
@@ -79,6 +79,21 @@ class Owner extends Model
         $normalized = mb_strtolower(trim((string) $value));
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    /** @return Attribute<string, string> */
+    protected function fullName(): Attribute
+    {
+        return Attribute::make(
+            get: function (mixed $value): string {
+                $stored = trim((string) $value);
+                if ($stored !== '') {
+                    return $stored;
+                }
+
+                return trim((string) ($this->company_name ?: $this->first_name.' '.$this->last_name));
+            },
+        );
     }
 
     private static function normalizePhone(mixed $value): ?string

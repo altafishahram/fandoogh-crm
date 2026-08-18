@@ -36,7 +36,7 @@ final class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
           child: SearchBar(
             controller: _query,
             autoFocus: true,
-            hintText: 'ملک، مالک یا مشتری…',
+            hintText: 'ملک، نام مالک یا مشتری…',
             leading: const Icon(Icons.search_rounded),
             onChanged: _schedule,
             onSubmitted: (_) => _search(),
@@ -63,9 +63,8 @@ final class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
     }
     final data = result.requireValue;
     final properties = _maps(data['properties']);
-    final owners = _maps(data['owners']);
     final customers = _maps(data['customers']);
-    if (properties.isEmpty && owners.isEmpty && customers.isEmpty) {
+    if (properties.isEmpty && customers.isEmpty) {
       return const EmptyState(message: 'نتیجه‌ای پیدا نشد.');
     }
     return ListView(
@@ -87,23 +86,11 @@ final class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
           ...customers.map(
             (item) => ListTile(
               leading: const Icon(Icons.person_outline),
-              title: Text('${item['first_name']} ${item['last_name']}'),
-              subtitle: Text('${item['mobile'] ?? item['email'] ?? ''}'),
-              onTap: () => context.push('/customers/${item['id']}'),
-            ),
-          ),
-        ],
-        if (owners.isNotEmpty) ...<Widget>[
-          const _Header('مالکان'),
-          ...owners.map(
-            (item) => ListTile(
-              leading: const Icon(Icons.badge_outlined),
               title: Text(
-                item['owner_type'] == 'company'
-                    ? '${item['company_name']}'
-                    : '${item['first_name']} ${item['last_name']}',
+                '${item['full_name'] ?? '${item['first_name'] ?? ''} ${item['last_name'] ?? ''}'}',
               ),
               subtitle: Text('${item['mobile'] ?? item['email'] ?? ''}'),
+              onTap: () => context.push('/customers/${item['id']}'),
             ),
           ),
         ],

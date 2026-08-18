@@ -19,7 +19,8 @@ abstract class SearchPage extends Page
         $query = trim((string) request()->query('q', ''));
         $results = mb_strlen($query) >= 2 && mb_strlen($query) <= 100
             ? app(GlobalSearchService::class)->search($user, $query)
-            : ['properties' => [], 'owners' => [], 'customers' => []];
+            : ['properties' => [], 'customers' => []];
+        unset($results['owners']);
 
         return compact('query', 'results');
     }

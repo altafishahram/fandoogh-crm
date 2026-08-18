@@ -25,7 +25,7 @@ final class PropertyImageController extends Controller
 {
     public function index(Property $property): AnonymousResourceCollection
     {
-        Gate::authorize('view', $property);
+        Gate::authorize('viewImages', $property);
 
         return PropertyImageResource::collection($property->images()->orderBy('sort_order')->get());
     }
@@ -35,7 +35,7 @@ final class PropertyImageController extends Controller
         Property $property,
         PropertyImageService $service,
     ): JsonResponse {
-        Gate::authorize('manageImages', $property);
+        Gate::authorize('createImages', $property);
         /** @var User $user */
         $user = $request->user();
         $file = $request->file('image');
@@ -51,7 +51,7 @@ final class PropertyImageController extends Controller
         PropertyImageService $service,
     ): PropertyImageResource {
         $this->ensureNested($property, $image);
-        Gate::authorize('manageImages', $property);
+        Gate::authorize('updateImages', $property);
         /** @var User $user */
         $user = $request->user();
 
@@ -72,7 +72,7 @@ final class PropertyImageController extends Controller
         PropertyImageService $service,
     ): Response {
         $this->ensureNested($property, $image);
-        Gate::authorize('manageImages', $property);
+        Gate::authorize('deleteImages', $property);
         /** @var User $user */
         $user = $request->user();
         $service->delete($property, $image, $user);
@@ -83,7 +83,7 @@ final class PropertyImageController extends Controller
     public function content(Property $property, PropertyImage $image): BinaryFileResponse
     {
         $this->ensureNested($property, $image);
-        Gate::authorize('view', $property);
+        Gate::authorize('viewImages', $property);
 
         return response()->file(Storage::disk('local')->path($image->storage_path), [
             'Content-Type' => $image->mime_type,

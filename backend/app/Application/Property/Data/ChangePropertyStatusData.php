@@ -14,5 +14,6 @@ final readonly class ChangePropertyStatusData
         public ?string $reason,
         public ?CarbonImmutable $closedAt,
         public CarbonImmutable $expectedUpdatedAt,
+        public ?int $expectedVersion = null,
     ) {}
 }

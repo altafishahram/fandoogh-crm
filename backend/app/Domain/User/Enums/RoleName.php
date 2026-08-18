@@ -50,13 +50,26 @@ enum RoleName: string
                 PermissionName::PropertiesChangeStatus,
                 PermissionName::PropertiesManageImages,
                 PermissionName::PropertiesManageNotes,
+                PermissionName::PropertyImagesView,
+                PermissionName::PropertyImagesCreate,
+                PermissionName::PropertyImagesUpdate,
+                PermissionName::PropertyImagesDelete,
+                PermissionName::PropertyNotesView,
+                PermissionName::PropertyNotesCreate,
+                PermissionName::PropertyNotesUpdate,
+                PermissionName::PropertyNotesDelete,
                 PermissionName::CustomersView,
                 PermissionName::CustomersCreate,
                 PermissionName::CustomersUpdate,
+                PermissionName::CustomersChangeStatus,
                 PermissionName::CustomersDelete,
                 PermissionName::CustomersRestore,
                 PermissionName::CustomersAssign,
                 PermissionName::CustomersManageNotes,
+                PermissionName::CustomerNotesView,
+                PermissionName::CustomerNotesCreate,
+                PermissionName::CustomerNotesUpdate,
+                PermissionName::CustomerNotesDelete,
                 PermissionName::SavedFiltersManage,
                 PermissionName::ReportsAgencyView,
                 PermissionName::ReportsOwnView,
@@ -64,23 +77,52 @@ enum RoleName: string
             ],
             self::Agent => [
                 PermissionName::AgencyDashboardView,
-                PermissionName::OwnersView,
-                PermissionName::OwnersCreate,
-                PermissionName::OwnersUpdate,
-                PermissionName::PropertiesView,
-                PermissionName::PropertiesCreate,
-                PermissionName::PropertiesUpdate,
-                PermissionName::PropertiesChangeStatus,
-                PermissionName::PropertiesManageImages,
-                PermissionName::PropertiesManageNotes,
-                PermissionName::CustomersView,
-                PermissionName::CustomersCreate,
-                PermissionName::CustomersUpdate,
-                PermissionName::CustomersManageNotes,
-                PermissionName::SavedFiltersManage,
-                PermissionName::ReportsOwnView,
                 PermissionName::ProfileUpdate,
             ],
         };
+    }
+
+    /** @return list<PermissionName> */
+    public static function agentDefaultPermissions(): array
+    {
+        return [
+            PermissionName::OwnersView,
+            PermissionName::OwnersCreate,
+            PermissionName::OwnersUpdate,
+            PermissionName::PropertiesView,
+            PermissionName::PropertiesCreate,
+            PermissionName::PropertiesUpdate,
+            PermissionName::PropertyImagesView,
+            PermissionName::PropertyImagesCreate,
+            PermissionName::PropertyImagesUpdate,
+            PermissionName::PropertyImagesDelete,
+            PermissionName::PropertyNotesView,
+            PermissionName::PropertyNotesCreate,
+            PermissionName::PropertyNotesUpdate,
+            PermissionName::PropertyNotesDelete,
+            PermissionName::CustomersView,
+            PermissionName::CustomersCreate,
+            PermissionName::CustomersUpdate,
+            PermissionName::CustomerNotesView,
+            PermissionName::CustomerNotesCreate,
+            PermissionName::CustomerNotesUpdate,
+            PermissionName::CustomerNotesDelete,
+            PermissionName::SavedFiltersManage,
+            PermissionName::ReportsOwnView,
+        ];
+    }
+
+    /** @return list<PermissionName> */
+    public static function agentConfigurablePermissions(): array
+    {
+        return [
+            ...self::agentDefaultPermissions(),
+            PermissionName::PropertiesDelete,
+            PermissionName::PropertiesRestore,
+            PermissionName::PropertiesChangeStatus,
+            PermissionName::CustomersDelete,
+            PermissionName::CustomersRestore,
+            PermissionName::CustomersChangeStatus,
+        ];
     }
 }

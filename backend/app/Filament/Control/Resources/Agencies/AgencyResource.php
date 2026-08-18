@@ -11,6 +11,7 @@ use App\Filament\Control\Resources\Agencies\Pages\CreateAgency;
 use App\Filament\Control\Resources\Agencies\Pages\EditAgency;
 use App\Filament\Control\Resources\Agencies\Pages\ListAgencies;
 use App\Filament\Control\Resources\Agencies\Pages\ViewAgency;
+use App\Filament\Shared\Support\PersianDate;
 use App\Filament\Shared\Support\PersianLabels;
 use App\Filament\Shared\Support\ResourceForms;
 use App\Models\Agency;
@@ -81,7 +82,7 @@ final class AgencyResource extends Resource
             TextColumn::make('name')->label(PersianLabels::field('name'))->searchable()->sortable(), TextColumn::make('slug')->label(PersianLabels::field('slug'))->searchable(),
             IconColumn::make('is_active')->label(PersianLabels::field('is_active'))->boolean(), TextColumn::make('city')->label(PersianLabels::field('city'))->searchable(),
             TextColumn::make('timezone')->label(PersianLabels::field('timezone')), TextColumn::make('users_count')->counts('users')->label(PersianLabels::field('users_count')),
-            TextColumn::make('activated_at')->label(PersianLabels::field('activated_at'))->dateTime()->placeholder('-')->sortable(),
+            TextColumn::make('activated_at')->label(PersianLabels::field('activated_at'))->formatStateUsing(PersianDate::format(...))->placeholder('—')->sortable(),
         ])->filters([TernaryFilter::make('is_active')->label('وضعیت فعالیت')])->recordActions([
             ViewAction::make(), EditAction::make(),
             Action::make('activate')->label('فعال‌کردن')->color('success')->requiresConfirmation()

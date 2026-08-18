@@ -22,10 +22,11 @@ final class PropertyWorkflowTest extends DomainTestCase
         ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
         $this->establish($manager);
         $owner = Owner::factory()->forAgency($agency, $manager)->create();
+        $secondOwner = Owner::factory()->forAgency($agency, $manager)->create();
         $service = app(CreatePropertyService::class);
 
         $first = $service->execute($manager, $this->salePropertyData($owner, $agent));
-        $second = $service->execute($manager, $this->salePropertyData($owner, $agent));
+        $second = $service->execute($manager, $this->salePropertyData($secondOwner, $agent));
 
         $prefix = $agency->settings()->firstOrFail()->property_code_prefix;
         $this->assertSame($prefix.'-000001', $first->code);

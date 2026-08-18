@@ -20,14 +20,14 @@ final class CustomerNoteController extends Controller
 {
     public function index(Customer $customer): AnonymousResourceCollection
     {
-        Gate::authorize('view', $customer);
+        Gate::authorize('viewNotes', $customer);
 
         return NoteResource::collection($customer->notes()->orderByDesc('created_at')->paginate(50));
     }
 
     public function store(NoteRequest $request, Customer $customer, CustomerNoteService $service): JsonResponse
     {
-        Gate::authorize('manageNotes', $customer);
+        Gate::authorize('createNotes', $customer);
         /** @var User $user */
         $user = $request->user();
 
@@ -42,7 +42,7 @@ final class CustomerNoteController extends Controller
         CustomerNoteService $service,
     ): NoteResource {
         $this->ensureNested($customer, $note);
-        Gate::authorize('manageNotes', $customer);
+        Gate::authorize('updateNotes', $customer);
         Gate::authorize('update', $note);
 
         return new NoteResource($service->update($note, (string) $request->validated('body')));
@@ -54,7 +54,7 @@ final class CustomerNoteController extends Controller
         CustomerNoteService $service,
     ): Response {
         $this->ensureNested($customer, $note);
-        Gate::authorize('manageNotes', $customer);
+        Gate::authorize('deleteNotes', $customer);
         Gate::authorize('delete', $note);
         $service->delete($note);
 

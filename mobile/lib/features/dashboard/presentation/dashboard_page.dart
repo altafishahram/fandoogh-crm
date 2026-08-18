@@ -4,6 +4,7 @@ import 'package:fandoogh_crm/core/network/api_repository.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/core/widgets/section_card.dart';
+import 'package:fandoogh_crm/features/properties/presentation/widgets/property_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,7 +42,7 @@ final class DashboardPage extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: <Widget>[
-              _StatusSummary(data: data),
+              _StatusSummary(data: data, isManager: auth.isManager),
               const SizedBox(height: 12),
               SectionCard(
                 title: 'دسترسی سریع',
@@ -49,16 +50,18 @@ final class DashboardPage extends ConsumerWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: <Widget>[
-                    FilledButton.tonalIcon(
-                      onPressed: () => context.push('/properties/new'),
-                      icon: const Icon(Icons.add_home_work_outlined),
-                      label: const Text('ملک جدید'),
-                    ),
-                    FilledButton.tonalIcon(
-                      onPressed: () => context.push('/customers/new'),
-                      icon: const Icon(Icons.person_add_alt),
-                      label: const Text('مشتری جدید'),
-                    ),
+                    if (auth.can('properties.create'))
+                      FilledButton.tonalIcon(
+                        onPressed: () => context.push('/properties/new'),
+                        icon: const Icon(Icons.add_home_work_outlined),
+                        label: const Text('ملک جدید'),
+                      ),
+                    if (auth.can('customers.create'))
+                      FilledButton.tonalIcon(
+                        onPressed: () => context.push('/customers/new'),
+                        icon: const Icon(Icons.person_add_alt),
+                        label: const Text('مشتری جدید'),
+                      ),
                     FilledButton.tonalIcon(
                       onPressed: () => context.push('/search'),
                       icon: const Icon(Icons.manage_search_rounded),
@@ -80,8 +83,9 @@ final class DashboardPage extends ConsumerWidget {
 }
 
 final class _StatusSummary extends StatelessWidget {
-  const _StatusSummary({required this.data});
+  const _StatusSummary({required this.data, required this.isManager});
   final Map<String, dynamic> data;
+  final bool isManager;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +94,7 @@ final class _StatusSummary extends StatelessWidget {
         ? Map<String, dynamic>.from(raw)
         : <String, dynamic>{};
     return SectionCard(
-      title: 'وضعیت کار من',
+      title: isManager ? 'وضعیت آژانس' : 'وضعیت کار من',
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -113,32 +117,39 @@ final class _StatusSummary extends StatelessWidget {
   }
 }
 
-final class _RecentProperties extends StatelessWidget {
+final class _RecentProperties extends ConsumerWidget {
   const _RecentProperties({required this.items});
   final Object? items;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final rawItems = items;
     final values = rawItems is List
-        ? rawItems.whereType<Map>().toList()
-        : <Map>[];
+        ? rawItems
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList(growable: false)
+        : const <Map<String, dynamic>>[];
+    final token = ref.read(apiClientProvider).token;
+    final imageHeaders = token == null || token.isEmpty
+        ? null
+        : <String, String>{'Authorization': 'Bearer $token'};
     return SectionCard(
       title: 'املاک اخیر',
       child: values.isEmpty
           ? const Text('هنوز ملکی ثبت نشده است.')
           : Column(
-              children: values
-                  .map(
-                    (item) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('${item['title'] ?? 'بدون عنوان'}'),
-                      subtitle: Text('${item['code'] ?? ''}'),
-                      trailing: const Icon(Icons.chevron_left_rounded),
-                      onTap: () => context.push('/properties/${item['id']}'),
-                    ),
-                  )
-                  .toList(growable: false),
+              children: <Widget>[
+                for (var index = 0; index < values.length; index++) ...<Widget>[
+                  PropertyCard.fromMap(
+                    values[index],
+                    imageHeaders: imageHeaders,
+                    onTap: () =>
+                        context.push('/properties/${values[index]['id']}'),
+                  ),
+                  if (index < values.length - 1) const SizedBox(height: 8),
+                ],
+              ],
             ),
     );
   }

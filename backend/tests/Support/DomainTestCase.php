@@ -57,7 +57,7 @@ abstract class DomainTestCase extends IdentityTestCase
             bathrooms: 1,
             floorNumber: 2,
             totalFloors: 5,
-            yearBuilt: 2020,
+            yearBuilt: 1403,
             parkingSpaces: 1,
             hasStorageRoom: true,
             hasElevator: true,

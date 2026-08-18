@@ -1,5 +1,7 @@
 import 'package:fandoogh_crm/core/auth/auth_controller.dart';
+import 'package:fandoogh_crm/core/localization/persian_date.dart';
 import 'package:fandoogh_crm/core/network/api_client.dart';
+import 'package:fandoogh_crm/core/phone/phone_launcher.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/core/widgets/section_card.dart';
@@ -17,14 +19,16 @@ final class CustomerDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final customer = ref.watch(customerProvider(customerId));
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(customer.value?.name ?? 'جزئیات مشتری'),
           actions: <Widget>[
             IconButton(
               tooltip: 'ویرایش مشتری',
-              onPressed: customer.hasValue
+              onPressed:
+                  customer.hasValue &&
+                      ref.watch(authControllerProvider).can('customers.update')
                   ? () async {
                       final changed = await context.push<bool>(
                         '/customers/$customerId/edit',
@@ -38,9 +42,11 @@ final class CustomerDetailPage extends ConsumerWidget {
             ),
           ],
           bottom: const TabBar(
+            isScrollable: true,
             tabs: <Widget>[
               Tab(text: 'مشخصات', icon: Icon(Icons.person_outline)),
               Tab(text: 'یادداشت‌ها', icon: Icon(Icons.note_alt_outlined)),
+              Tab(text: 'تاریخچه', icon: Icon(Icons.history_rounded)),
             ],
           ),
         ),
@@ -54,6 +60,7 @@ final class CustomerDetailPage extends ConsumerWidget {
             children: <Widget>[
               _CustomerOverview(customer: item),
               _CustomerNotes(customerId: customerId),
+              _CustomerHistory(customerId: customerId),
             ],
           ),
         ),
@@ -88,8 +95,12 @@ final class _CustomerOverview extends ConsumerWidget {
           title: 'اطلاعات تماس',
           child: Column(
             children: <Widget>[
-              _row('موبایل', customer.mobile),
-              _row('تلفن', '${customer.data['phone'] ?? '—'}'),
+              _phoneRow(context, 'موبایل', customer.mobile),
+              _phoneRow(
+                context,
+                'تلفن ثابت',
+                '${customer.data['phone'] ?? ''}',
+              ),
               _row('ایمیل', '${customer.data['email'] ?? '—'}'),
               _row(
                 'روش ترجیحی',
@@ -109,10 +120,57 @@ final class _CustomerOverview extends ConsumerWidget {
                 'انواع ملک',
                 _types(customer.data['preferred_property_types']),
               ),
-              _row(
-                'بودجه',
-                '${customer.data['budget_min'] ?? '—'} تا ${customer.data['budget_max'] ?? '—'}',
-              ),
+              if (customer.data['building_type'] != null)
+                _row(
+                  'نوع بنا',
+                  labelOf(
+                    buildingTypes,
+                    customer.data['building_type'] as String?,
+                  ),
+                ),
+              if (customer.data['desired_property_type'] ==
+                  'industrial') ...<Widget>[
+                _row('نوع سازه', '${customer.data['structure_type'] ?? '—'}'),
+                _row(
+                  'آب',
+                  customer.data['has_water'] == true ? 'دارد' : 'ندارد',
+                ),
+                _row(
+                  'برق',
+                  customer.data['has_electricity'] == true ? 'دارد' : 'ندارد',
+                ),
+                _row(
+                  'گاز',
+                  customer.data['has_gas'] == true ? 'دارد' : 'ندارد',
+                ),
+                _row(
+                  'تعداد خط تلفن',
+                  '${customer.data['telephone_line_count'] ?? '—'}',
+                ),
+                _row('متراژ زمین', '${customer.data['land_area'] ?? '—'}'),
+                _row('متراژ بنا', '${customer.data['building_area'] ?? '—'}'),
+              ],
+              if (customer.intent == 'buy')
+                _row(
+                  'بودجه',
+                  '${formatToman(customer.data['budget_min'])} تا ${formatToman(customer.data['budget_max'])}',
+                )
+              else ...<Widget>[
+                _row(
+                  'ودیعه',
+                  '${formatToman(customer.data['rental_deposit_min'])} تا ${formatToman(customer.data['rental_deposit_max'])}',
+                ),
+                _row(
+                  'اجاره',
+                  '${formatToman(customer.data['rental_rent_min'])} تا ${formatToman(customer.data['rental_rent_max'])}',
+                ),
+                _row(
+                  'تبدیل',
+                  customer.data['accepts_rent_conversion'] == true
+                      ? 'دارد'
+                      : 'ندارد',
+                ),
+              ],
               _row(
                 'محدوده',
                 '${customer.data['desired_city'] ?? '—'}، ${customer.data['desired_district'] ?? '—'}',
@@ -122,6 +180,82 @@ final class _CustomerOverview extends ConsumerWidget {
                 '${customer.data['min_area_sqm'] ?? '—'} تا ${customer.data['max_area_sqm'] ?? '—'}',
               ),
               _row('حداقل خواب', '${customer.data['min_bedrooms'] ?? '—'}'),
+              _row(
+                'پارکینگ',
+                _yesNo(
+                  customer.data['has_parking'] ??
+                      ((num.tryParse(
+                                '${customer.data['min_parking_spaces'] ?? ''}',
+                              ) ??
+                              0) >
+                          0),
+                ),
+              ),
+              _row('انباری', _yesNo(customer.data['has_storage_room'])),
+              if (customer.intent == 'rent') ...<Widget>[
+                _row(
+                  'مالک در ساختمان سکونت دارد',
+                  _yesNo(customer.data['owner_resides']),
+                ),
+                _row('آسانسور', _yesNo(customer.data['has_elevator'])),
+                _row('بالکن', _yesNo(customer.data['has_balcony'])),
+              ],
+              const Divider(height: 22),
+              _row(
+                'نوع سرویس',
+                _labels(toiletTypes, customer.data['toilet_types']),
+              ),
+              if (customer.intent != 'rent' ||
+                  customer.data['desired_property_type'] == 'apartment')
+                _row(
+                  'سرویس مستر',
+                  _yesNo(customer.data['has_master_bathroom']),
+                ),
+              _row(
+                'نوع کابینت',
+                labelOf(cabinetTypes, customer.data['cabinet_type'] as String?),
+              ),
+              _row(
+                'نوع گرمایش',
+                labelOf(heatingTypes, customer.data['heating_type'] as String?),
+              ),
+              _row(
+                'نوع سرمایش',
+                labelOf(coolingTypes, customer.data['cooling_type'] as String?),
+              ),
+              _row(
+                'نوع کف‌پوش',
+                labelOf(
+                  flooringTypes,
+                  customer.data['flooring_type'] as String?,
+                ),
+              ),
+              _row(
+                'بازسازی',
+                labelOf(
+                  renovationStatuses,
+                  customer.data['renovation_status'] as String?,
+                ),
+              ),
+              _row(
+                'جهت ساختمان',
+                labelOf(
+                  buildingOrientations,
+                  customer.data['building_orientation'] as String?,
+                ),
+              ),
+              if (customer.intent != 'rent') ...<Widget>[
+                _row(
+                  'نوع سند',
+                  labelOf(deedTypes, customer.data['deed_type'] as String?),
+                ),
+                _row('وام', _yesNo(customer.data['has_loan'])),
+                _row('قابل معاوضه', _yesNo(customer.data['is_exchangeable'])),
+                _row('استخر', _yesNo(customer.data['has_pool'])),
+                _row('جکوزی', _yesNo(customer.data['has_jacuzzi'])),
+                _row('سونا', _yesNo(customer.data['has_sauna'])),
+              ],
+              _row('تاریخ ثبت', PersianDate.formatIso(customer.createdAt)),
             ],
           ),
         ),
@@ -145,9 +279,38 @@ final class _CustomerOverview extends ConsumerWidget {
     ),
   );
 
+  static Widget _phoneRow(BuildContext context, String label, String number) =>
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: <Widget>[
+            SizedBox(width: 110, child: Text(label)),
+            Expanded(
+              child: Text(
+                number.isEmpty ? '—' : number,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (number.isNotEmpty)
+              IconButton(
+                tooltip: 'تماس با $label مشتری',
+                onPressed: () => launchPhoneCall(context, number),
+                icon: const Icon(Icons.phone_rounded),
+              ),
+          ],
+        ),
+      );
+
   static String _types(Object? value) => value is List && value.isNotEmpty
       ? value.map((item) => labelOf(propertyTypes, '$item')).join('، ')
       : '—';
+
+  static String _labels(List<ChoiceItem> items, Object? value) =>
+      value is List && value.isNotEmpty
+      ? value.map((item) => labelOf(items, '$item')).join('، ')
+      : '—';
+
+  static String _yesNo(Object? value) => value == true ? 'بله' : 'خیر';
 }
 
 final class _CustomerNotes extends ConsumerStatefulWidget {
@@ -225,7 +388,11 @@ final class _CustomerNotesState extends ConsumerState<_CustomerNotes> {
                         return Card(
                           child: ListTile(
                             title: Text('${note['body']}'),
-                            subtitle: Text('${note['created_at'] ?? ''}'),
+                            subtitle: Text(
+                              PersianDate.formatIso(
+                                '${note['created_at'] ?? ''}',
+                              ),
+                            ),
                             trailing: note['author_user_id'] == userId
                                 ? PopupMenuButton<String>(
                                     onSelected: (action) => action == 'edit'
@@ -314,4 +481,56 @@ final class _CustomerNotesState extends ConsumerState<_CustomerNotes> {
       }
     }
   }
+}
+
+final class _CustomerHistory extends ConsumerWidget {
+  const _CustomerHistory({required this.customerId});
+  final int customerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(customerHistoryProvider(customerId));
+    return history.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => ErrorState(
+        error: error,
+        onRetry: () => ref.invalidate(customerHistoryProvider(customerId)),
+      ),
+      data: (items) => items.isEmpty
+          ? const EmptyState(
+              message: 'تاریخچه‌ای برای این مشتری وجود ندارد.',
+              icon: Icons.history_rounded,
+            )
+          : RefreshIndicator(
+              onRefresh: () async =>
+                  ref.invalidate(customerHistoryProvider(customerId)),
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: items.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.history_toggle_off_rounded),
+                      title: Text(_label('${item['action'] ?? ''}')),
+                      subtitle: Text(
+                        PersianDate.formatIso(
+                          '${item['occurred_at'] ?? item['created_at'] ?? ''}',
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
+  }
+
+  static String _label(String action) => switch (action) {
+    'created' => 'ایجاد مشتری',
+    'updated' => 'ویرایش مشخصات',
+    'status_changed' => 'تغییر وضعیت',
+    _ => 'تغییر اطلاعات',
+  };
 }

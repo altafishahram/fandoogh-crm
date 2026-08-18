@@ -30,7 +30,11 @@ final readonly class ChangePropertyStatusService
     {
         return DB::transaction(function () use ($actor, $property, $data): Property {
             $locked = $this->properties->lock((int) $property->getKey());
-            $this->optimisticLock->assertCurrent($locked, $data->expectedUpdatedAt);
+            if ($data->expectedVersion !== null) {
+                $this->optimisticLock->assertVersion($locked, $data->expectedVersion);
+            } else {
+                $this->optimisticLock->assertCurrent($locked, $data->expectedUpdatedAt);
+            }
             $from = $locked->status;
             $to = $data->status;
             $this->validateTransition($actor, $locked, $from, $to, $data->reason);
@@ -47,6 +51,7 @@ final readonly class ChangePropertyStatusService
             $locked->closed_at = in_array($to, [PropertyStatus::Sold, PropertyStatus::Rented], true)
                 ? ($data->closedAt ?? CarbonImmutable::now()) : null;
             $locked->archived_at = $to === PropertyStatus::Archived ? CarbonImmutable::now() : null;
+            $locked->lock_version = (int) $locked->lock_version + 1;
             $locked = $this->properties->save($locked);
             $action = match (true) {
                 $to === PropertyStatus::Archived => PropertyHistoryAction::Archived,

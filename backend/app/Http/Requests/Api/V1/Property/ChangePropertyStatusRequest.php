@@ -24,7 +24,8 @@ final class ChangePropertyStatusRequest extends FormRequest
             'status' => ['required', Rule::enum(PropertyStatus::class)],
             'reason' => ['nullable', 'string', 'max:1000'],
             'closed_at' => ['nullable', 'date'],
-            'expected_updated_at' => ['required', 'date'],
+            'expected_updated_at' => ['required_without:expected_version', 'date'],
+            'expected_version' => ['required_without:expected_updated_at', 'integer', 'min:1'],
         ];
     }
 
@@ -36,7 +37,10 @@ final class ChangePropertyStatusRequest extends FormRequest
             PropertyStatus::from($data['status']),
             $data['reason'] ?? null,
             isset($data['closed_at']) ? CarbonImmutable::parse($data['closed_at']) : null,
-            CarbonImmutable::parse($data['expected_updated_at']),
+            isset($data['expected_updated_at'])
+                ? CarbonImmutable::parse($data['expected_updated_at'])
+                : CarbonImmutable::createFromTimestampUTC(0),
+            isset($data['expected_version']) ? (int) $data['expected_version'] : null,
         );
     }
 }

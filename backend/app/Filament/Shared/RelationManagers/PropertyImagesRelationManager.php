@@ -15,6 +15,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 
 final class PropertyImagesRelationManager extends RelationManager
@@ -22,6 +23,11 @@ final class PropertyImagesRelationManager extends RelationManager
     protected static string $relationship = 'images';
 
     protected static ?string $title = 'تصاویر';
+
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord instanceof Property && Gate::allows('viewImages', $ownerRecord);
+    }
 
     public function table(Table $table): Table
     {
@@ -31,18 +37,18 @@ final class PropertyImagesRelationManager extends RelationManager
             IconColumn::make('is_cover')->label(PersianLabels::field('is_cover'))->boolean(), TextColumn::make('sort_order')->label(PersianLabels::field('sort_order'))->sortable(),
         ])->recordActions([
             Action::make('set_cover')->label('انتخاب به‌عنوان تصویر اصلی')->visible(fn (PropertyImage $record): bool => ! $record->is_cover
-                && Gate::allows('manageImages', $this->property()))
+                && Gate::allows('updateImages', $this->property()))
                 ->action(function (PropertyImage $record): void {
-                    Gate::authorize('manageImages', $this->property());
+                    Gate::authorize('updateImages', $this->property());
                     app(PropertyImageService::class)->update(
                         $this->property(), $record, $this->actor(), $record->sort_order, true,
                         CarbonImmutable::parse((string) $record->updated_at),
                     );
                 }),
             Action::make('delete')->label('حذف')->color('danger')->requiresConfirmation()
-                ->visible(fn (): bool => Gate::allows('manageImages', $this->property()))
+                ->visible(fn (): bool => Gate::allows('deleteImages', $this->property()))
                 ->action(function (PropertyImage $record): void {
-                    Gate::authorize('manageImages', $this->property());
+                    Gate::authorize('deleteImages', $this->property());
                     app(PropertyImageService::class)->delete($this->property(), $record, $this->actor());
                 }),
         ])->defaultSort('sort_order');

@@ -1,17 +1,31 @@
-# fandoogh_crm
+# برنامهٔ اندروید ملک‌بان
 
-A new Flutter project.
+برنامهٔ فلاتر ملک‌بان برای استفادهٔ داخلی مدیر و کارشناسان آژانس طراحی شده است.
 
-## Getting Started
+## نشانی سرویس
 
-This project is a starting point for a Flutter application.
+نشانی پیش‌فرض سرویس امن است:
 
-A few resources to get you started if this is your first Flutter project:
+```text
+https://crm.fandooghstudio.ir/api/v1
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+برای محیط توسعه می‌توان مقدار `API_BASE_URL` را هنگام اجرا تعیین کرد؛ مقدار واقعی توکن، رمز یا کلید نباید در فایل‌های پروژه ثبت شود.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## تاریخ و مبلغ
+
+- تاریخ‌ها در رابط کاربری به شکل شمسی مانند «۱۷ مرداد ۱۴۰۵» نمایش داده می‌شوند.
+- تبادل تاریخ با سرویس با قالب استاندارد میلادی انجام می‌شود.
+- تمام مبلغ‌ها تومان و بدون اعشار هستند.
+
+## نمایش اعداد در فرم‌ها
+
+- اعداد فرم‌های ثبت و ویرایش ملک و مشتری با رقم فارسی نمایش داده می‌شوند؛ حتی اگر صفحه‌کلید رقم انگلیسی بفرستد.
+- جداکنندهٔ هزارگان در مقدارهای عددی با نشانهٔ «٬» نمایش داده می‌شود.
+- شماره‌های همراه و تلفن ثابت فارسی نمایش داده می‌شوند، اما برای جلوگیری از تغییر شماره، جداکنندهٔ هزارگان نمی‌گیرند.
+- زیر کادرهای مبلغ، مقدار واردشده به حروف و با اندازهٔ کوچک نمایش داده می‌شود.
+- پیش از ارسال، رقم‌های فارسی و جداکننده‌های نمایشی به عدد استاندارد تبدیل می‌شوند و رابط برنامه‌نویسی مقدار خام دریافت می‌کند.
+
+## حالت آفلاین
+
+فهرست‌های دیده‌شده به‌صورت رمزگذاری‌شده و جدا برای هر آژانس و کاربر نگهداری می‌شوند. ثبت ملک بدون تصویر، ثبت مشتری و تغییر وضعیت ملک می‌توانند در صف همگام‌سازی قرار گیرند. ویرایش، تصویر، یادداشت و گزارش به اتصال اینترنت نیاز دارند.

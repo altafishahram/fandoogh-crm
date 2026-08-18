@@ -6,6 +6,7 @@ namespace App\Filament\Agency\Resources\Users\Pages;
 
 use App\Application\User\Data\CreateUserData;
 use App\Application\User\Services\CreateUserService;
+use App\Application\User\Services\UpdateAgentPermissionsService;
 use App\Domain\User\Enums\RoleName;
 use App\Filament\Agency\Resources\Users\UserResource;
 use App\Models\User;
@@ -23,9 +24,13 @@ final class CreateUser extends CreateRecord
         abort_unless($actor instanceof User, 401);
         $agency = $actor->agency()->firstOrFail();
 
-        return app(CreateUserService::class)->execute($actor, $agency, new CreateUserData(
+        $user = app(CreateUserService::class)->execute($actor, $agency, new CreateUserData(
             (string) $data['name'], (string) $data['email'], isset($data['phone']) ? (string) $data['phone'] : null,
             (string) $data['temporary_password'], RoleName::Agent,
         ));
+        $permissions = is_array($data['permissions'] ?? null)
+            ? array_values(array_map('strval', $data['permissions'])) : [];
+
+        return app(UpdateAgentPermissionsService::class)->execute($actor, $user, $permissions);
     }
 }

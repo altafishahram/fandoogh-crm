@@ -31,6 +31,8 @@ use Illuminate\Support\Facades\Gate;
 
 final class OwnerResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = Owner::class;
 
     protected static ?string $modelLabel = 'مالک';

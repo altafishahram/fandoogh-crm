@@ -38,6 +38,12 @@ final readonly class CreateUserService
         return DB::transaction(function () use ($agency, $data): User {
             $user = $this->users->create($data, $agency);
             $user->syncRoles([$data->role->value]);
+            $user->syncPermissions($data->role === RoleName::Agent
+                ? array_map(
+                    static fn (PermissionName $permission): string => $permission->value,
+                    RoleName::agentDefaultPermissions(),
+                )
+                : []);
 
             return $user;
         });

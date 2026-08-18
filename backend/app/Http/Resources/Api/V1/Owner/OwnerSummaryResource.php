@@ -14,6 +14,7 @@ final class OwnerSummaryResource extends JsonResource
     {
         return [
             'id' => $this->resource->getKey(),
+            'full_name' => $this->resource->full_name,
             'owner_type' => $this->resource->owner_type->value,
             'display_name' => $this->resource->owner_type->value === 'company'
                 ? $this->resource->company_name

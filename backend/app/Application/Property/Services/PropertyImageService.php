@@ -71,8 +71,8 @@ final readonly class PropertyImageService
                     ->where('property_id', $property->getKey())
                     ->lockForUpdate()
                     ->get();
-                if ($images->count() >= 20) {
-                    throw new DomainConflictException('هر ملک حداکثر می‌تواند ۲۰ تصویر فعال داشته باشد.');
+                if ($images->count() >= 5) {
+                    throw new DomainConflictException('هر ملک حداکثر می‌تواند ۵ تصویر فعال داشته باشد.');
                 }
 
                 $image = PropertyImage::query()->create([

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
-use App\Domain\User\Enums\PermissionName;
-use App\Domain\User\Enums\RoleName;
 use App\Models\Agency;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +14,13 @@ use Tests\Support\IdentityTestCase;
 
 final class MobileAuthenticationTest extends IdentityTestCase
 {
+    public function test_unauthenticated_api_request_never_redirects_to_a_web_login_route(): void
+    {
+        $this->get('/api/v1/auth/me')
+            ->assertUnauthorized()
+            ->assertJsonPath('error.code', 'UNAUTHENTICATED');
+    }
+
     public function test_agent_can_update_own_mobile_profile(): void
     {
         $agency = Agency::factory()->active()->create();
@@ -64,13 +69,9 @@ final class MobileAuthenticationTest extends IdentityTestCase
             ->assertJsonPath('data.id', $agent->getKey())
             ->assertJsonPath('data.agency.id', $agency->getKey())
             ->assertJsonPath('data.agency.name', $agency->name)
-            ->assertJsonFragment(['permissions' => collect(PermissionName::cases())
-                ->filter(static fn (PermissionName $permission): bool => in_array(
-                    $permission,
-                    RoleName::Agent->permissions(),
-                    true,
-                ))
-                ->map(static fn (PermissionName $permission): string => $permission->value)
+            ->assertJsonFragment(['permissions' => $agent->getAllPermissions()
+                ->pluck('name')
+                ->map(static fn (mixed $permission): string => (string) $permission)
                 ->sort()
                 ->values()
                 ->all()])
@@ -97,7 +98,7 @@ final class MobileAuthenticationTest extends IdentityTestCase
         self::assertSame($wrongPassword->json('error.message'), $missingEmail->json('error.message'));
     }
 
-    public function test_manager_inactive_user_and_suspended_agency_cannot_obtain_mobile_token(): void
+    public function test_manager_can_login_but_inactive_user_and_suspended_agency_cannot(): void
     {
         $activeAgency = Agency::factory()->active()->create();
         $suspendedAgency = Agency::factory()->create();
@@ -105,13 +106,22 @@ final class MobileAuthenticationTest extends IdentityTestCase
         User::factory()->agent($activeAgency)->inactive()->create(['email' => 'inactive@example.test']);
         User::factory()->agent($suspendedAgency)->create(['email' => 'suspended@example.test']);
 
-        foreach (['manager@example.test', 'inactive@example.test', 'suspended@example.test'] as $email) {
+        $managerLogin = $this->postJson('/api/v1/auth/login', [
+            ...$this->credentials(),
+            'email' => 'manager@example.test',
+        ])->assertCreated();
+        $this->withToken((string) $managerLogin->json('data.token'))
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.role', 'agency-manager');
+
+        foreach (['inactive@example.test', 'suspended@example.test'] as $email) {
             $this->postJson('/api/v1/auth/login', [...$this->credentials(), 'email' => $email])
                 ->assertUnprocessable()
                 ->assertJsonPath('error.code', 'VALIDATION_FAILED');
         }
 
-        $this->assertDatabaseCount('personal_access_tokens', 0);
+        $this->assertDatabaseCount('personal_access_tokens', 1);
     }
 
     public function test_login_is_limited_to_five_failed_attempts_per_email_and_ip(): void

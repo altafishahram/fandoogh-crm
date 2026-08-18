@@ -1,10 +1,15 @@
 import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/network/api_repository.dart';
 import 'package:fandoogh_crm/core/network/paged_result.dart';
+import 'package:fandoogh_crm/core/offline/offline_store.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 final customerRepositoryProvider = Provider<CustomerRepository>(
-  (ref) => CustomerRepository(ref.watch(apiClientProvider)),
+  (ref) => CustomerRepository(
+    ref.watch(apiClientProvider),
+    ref.watch(offlineStoreProvider),
+  ),
 );
 
 final customersProvider =
@@ -21,6 +26,11 @@ final customerNotesProvider =
       (ref, id) => ref.watch(customerRepositoryProvider).notes(id),
     );
 
+final customerHistoryProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, int>(
+      (ref, id) => ref.watch(customerRepositoryProvider).history(id),
+    );
+
 final class CustomerRecord {
   const CustomerRecord(this.data);
   factory CustomerRecord.fromJson(Map<String, dynamic> json) =>
@@ -28,12 +38,16 @@ final class CustomerRecord {
 
   final Map<String, dynamic> data;
   int get id => (data['id'] as num).toInt();
-  String get name =>
-      '${data['first_name'] ?? ''} ${data['last_name'] ?? ''}'.trim();
+  String get name => '${data['full_name'] ?? ''}'.trim().isNotEmpty
+      ? '${data['full_name']}'.trim()
+      : '${data['first_name'] ?? ''} ${data['last_name'] ?? ''}'.trim();
   String get mobile => data['mobile'] as String? ?? '';
   String get status => data['status'] as String? ?? 'active';
   String get intent => data['intent'] as String? ?? 'buy';
   String get updatedAt => data['updated_at'] as String? ?? '';
+  String get createdAt => data['created_at'] as String? ?? '';
+  int get lockVersion => (data['lock_version'] as num?)?.toInt() ?? 1;
+  bool get pendingSync => data['pending_sync'] == true;
 }
 
 final class CustomersController
@@ -41,6 +55,9 @@ final class CustomersController
   String _query = '';
   String? _status;
   String? _intent;
+  String? _propertyType;
+  String? _district;
+  String _order = 'newest';
 
   @override
   Future<PagedResult<CustomerRecord>> build() => _load(1);
@@ -49,16 +66,25 @@ final class CustomersController
     'q': _query,
     'status': _status,
     'intent': _intent,
+    'property_type': _propertyType,
+    'district': _district,
+    'order': _order,
   };
 
   Future<void> applyFilters({
     String? query,
     String? status,
     String? intent,
+    String? propertyType,
+    String? district,
+    String order = 'newest',
   }) async {
     _query = query?.trim() ?? '';
     _status = status;
     _intent = intent;
+    _propertyType = propertyType;
+    _district = district?.trim().isEmpty == true ? null : district?.trim();
+    _order = order;
     state = const AsyncLoading<PagedResult<CustomerRecord>>();
     state = await AsyncValue.guard(() => _load(1));
   }
@@ -67,6 +93,9 @@ final class CustomersController
     query: filters['q'] as String?,
     status: filters['status'] as String?,
     intent: filters['intent'] as String?,
+    propertyType: filters['property_type'] as String?,
+    district: filters['district'] as String?,
+    order: '${filters['order'] ?? 'newest'}',
   );
 
   Future<void> refresh() async =>
@@ -86,21 +115,94 @@ final class CustomersController
 }
 
 class CustomerRepository extends ApiRepository {
-  const CustomerRepository(super.client);
+  const CustomerRepository(super.client, [this.offlineStore]);
+
+  final OfflineStore? offlineStore;
 
   Future<PagedResult<CustomerRecord>> list({
     required int page,
     Map<String, Object?> filters = const <String, Object?>{},
-  }) => getPage<CustomerRecord>(
-    '/customers',
-    query: <String, Object?>{...filters, 'page': page, 'per_page': 20},
-    decode: CustomerRecord.fromJson,
-  );
+  }) async {
+    try {
+      final result = await getPage<CustomerRecord>(
+        '/customers',
+        query: <String, Object?>{...filters, 'page': page, 'per_page': 20},
+        decode: CustomerRecord.fromJson,
+      );
+      await offlineStore?.mergeRecords(
+        'customers',
+        result.items.map((item) => item.data),
+      );
+      return result;
+    } catch (error) {
+      if (!_isNetwork(error) || offlineStore?.isConfigured != true) rethrow;
+      final records = await offlineStore!.records('customers');
+      final filtered = records.where((item) => _matches(item, filters)).toList()
+        ..sort((a, b) => _sort(a, b, '${filters['order'] ?? 'newest'}'));
+      return PagedResult<CustomerRecord>(
+        items: filtered.map(CustomerRecord.fromJson).toList(growable: false),
+        currentPage: 1,
+        lastPage: 1,
+      );
+    }
+  }
 
-  Future<CustomerRecord> find(int id) async =>
-      CustomerRecord.fromJson(await getOne('/customers/$id'));
-  Future<CustomerRecord> create(Map<String, Object?> data) async =>
-      CustomerRecord.fromJson(await post('/customers', data));
+  Future<CustomerRecord> find(int id) async {
+    try {
+      final item = await getOne('/customers/$id');
+      await offlineStore?.mergeRecords('customers', <Map<String, dynamic>>[
+        item,
+      ]);
+      return CustomerRecord.fromJson(item);
+    } catch (error) {
+      if (!_isNetwork(error) || offlineStore?.isConfigured != true) rethrow;
+      final item = (await offlineStore!.records(
+        'customers',
+      )).where((value) => (value['id'] as num?)?.toInt() == id).firstOrNull;
+      if (item == null) rethrow;
+      return CustomerRecord.fromJson(item);
+    }
+  }
+
+  Future<CustomerRecord> create(Map<String, Object?> data) async {
+    final operationKey = const Uuid().v7();
+    try {
+      final item = await post(
+        '/customers',
+        data,
+        headers: <String, Object?>{'Idempotency-Key': operationKey},
+      );
+      await offlineStore?.mergeRecords('customers', <Map<String, dynamic>>[
+        item,
+      ]);
+      return CustomerRecord.fromJson(item);
+    } catch (error) {
+      if (!_isNetwork(error) || offlineStore?.isConfigured != true) rethrow;
+      final operation = await offlineStore!.enqueue(
+        resource: 'customers',
+        action: 'create',
+        path: '/customers',
+        body: data,
+        operationKey: operationKey,
+      );
+      final now = DateTime.now().toUtc().toIso8601String();
+      final local = <String, dynamic>{
+        ...data,
+        'id': -DateTime.now().millisecondsSinceEpoch,
+        'status': 'active',
+        'lock_version': 1,
+        'created_at': now,
+        'updated_at': now,
+        'pending_sync': true,
+        'offline_operation_id': operation['id'],
+      };
+      await offlineStore!.mergeRecords('customers', <Map<String, dynamic>>[
+        local,
+      ]);
+      return CustomerRecord.fromJson(local);
+    }
+  }
+
   Future<CustomerRecord> update(int id, Map<String, Object?> data) async =>
       CustomerRecord.fromJson(await patch('/customers/$id', data));
   Future<List<Map<String, dynamic>>> notes(int id) =>
@@ -109,4 +211,51 @@ class CustomerRepository extends ApiRepository {
       post('/customers/$id/notes', <String, Object?>{'body': body});
   Future<void> deleteNote(int customerId, int noteId) =>
       delete('/customers/$customerId/notes/$noteId');
+  Future<List<Map<String, dynamic>>> history(int id) =>
+      getList('/customers/$id/history');
+
+  static bool _isNetwork(Object error) {
+    final failure = apiFailureFrom(error);
+    return failure.code == 'NETWORK_UNAVAILABLE' ||
+        failure.code == 'NETWORK_TIMEOUT';
+  }
+
+  static bool _matches(
+    Map<String, dynamic> item,
+    Map<String, Object?> filters,
+  ) {
+    for (final key in <String>['status', 'intent']) {
+      final expected = filters[key];
+      if (expected != null && expected != '' && '${item[key]}' != '$expected') {
+        return false;
+      }
+    }
+    final propertyType = filters['property_type'];
+    if (propertyType != null &&
+        propertyType != '' &&
+        '${item['desired_property_type']}' != '$propertyType') {
+      return false;
+    }
+    final district = '${filters['district'] ?? ''}'.trim().toLowerCase();
+    if (district.isNotEmpty &&
+        !'${item['desired_district'] ?? ''}'.toLowerCase().contains(district)) {
+      return false;
+    }
+    final q = '${filters['q'] ?? ''}'.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return '${item['full_name'] ?? ''} ${item['first_name'] ?? ''} ${item['last_name'] ?? ''} ${item['mobile'] ?? ''}'
+        .toLowerCase()
+        .contains(q);
+  }
+
+  static int _sort(
+    Map<String, dynamic> a,
+    Map<String, dynamic> b,
+    String order,
+  ) {
+    final result = '${b['created_at'] ?? b['updated_at'] ?? ''}'.compareTo(
+      '${a['created_at'] ?? a['updated_at'] ?? ''}',
+    );
+    return order == 'oldest' ? -result : result;
+  }
 }

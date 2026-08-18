@@ -29,6 +29,7 @@ final class AuthenticatedUserResource extends JsonResource
             'email' => $user->email,
             'phone' => $user->phone,
             'must_change_password' => $user->must_change_password,
+            'role' => $user->roleName()->value,
             'permissions' => $permissions,
             'agency' => $this->whenLoaded('agency', fn (): array => [
                 'id' => $user->agency?->getKey(),

@@ -1,4 +1,6 @@
 import 'package:fandoogh_crm/core/auth/auth_controller.dart';
+import 'package:fandoogh_crm/core/offline/offline_store.dart';
+import 'package:fandoogh_crm/core/offline/sync_controller.dart';
 import 'package:fandoogh_crm/core/widgets/glass_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ final class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
+    final queue = ref.watch(syncControllerProvider);
     final user = auth.user ?? <String, dynamic>{};
     final agency = user['agency'] is Map
         ? Map<String, dynamic>.from(user['agency'] as Map)
@@ -33,6 +36,11 @@ final class ProfilePage extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   Text('${user['email'] ?? ''}'),
+                  Chip(
+                    label: Text(
+                      auth.isManager ? 'مدیر آژانس' : 'کارشناس آژانس',
+                    ),
+                  ),
                   if (user['phone'] != null) Text('${user['phone']}'),
                   const Divider(height: 28),
                   ListTile(
@@ -66,19 +74,35 @@ final class ProfilePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
+          if ((queue.value?.isNotEmpty ?? false))
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.cloud_upload_outlined),
+                title: Text(
+                  '${queue.value!.length} عملیات در انتظار همگام‌سازی',
+                ),
+                subtitle: const Text(
+                  'پیش از خروج، اتصال اینترنت و همگام‌سازی را بررسی کنید.',
+                ),
+                trailing: IconButton(
+                  tooltip: 'همگام‌سازی',
+                  onPressed: queue.isLoading
+                      ? null
+                      : ref.read(syncControllerProvider.notifier).synchronize,
+                  icon: const Icon(Icons.sync_rounded),
+                ),
+              ),
+            ),
+          if ((queue.value?.isNotEmpty ?? false)) const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: auth.isBusy
-                ? null
-                : () => ref.read(authControllerProvider.notifier).logout(),
+            onPressed: auth.isBusy ? null : () => _confirmLogout(context, ref),
             icon: const Icon(Icons.logout_rounded),
             label: const Text('خروج از این دستگاه'),
           ),
           TextButton.icon(
             onPressed: auth.isBusy
                 ? null
-                : () => ref
-                      .read(authControllerProvider.notifier)
-                      .logout(allDevices: true),
+                : () => _confirmLogout(context, ref, allDevices: true),
             icon: const Icon(Icons.phonelink_erase_outlined),
             label: const Text('خروج از همه دستگاه‌ها'),
           ),
@@ -88,6 +112,40 @@ final class ProfilePage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmLogout(
+    BuildContext context,
+    WidgetRef ref, {
+    bool allDevices = false,
+  }) async {
+    final pending = await ref.read(offlineStoreProvider).pendingCount();
+    if (!context.mounted) return;
+    if (pending > 0) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('عملیات همگام‌نشده'),
+          content: Text(
+            '$pending عملیات هنوز به سرور ارسال نشده است. با خروج، این اطلاعات از دستگاه حذف می‌شود. آیا مطمئن هستید؟',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('خروج و حذف اطلاعات'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    await ref
+        .read(authControllerProvider.notifier)
+        .logout(allDevices: allDevices);
   }
 
   Future<void> _editProfile(

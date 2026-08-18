@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Application\Property\Services\ChangePropertyStatusService;
 use App\Application\Property\Services\CreatePropertyService;
 use App\Application\Property\Services\UpdatePropertyService;
-use App\Domain\User\Enums\RoleName;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Property\ChangePropertyStatusRequest;
 use App\Http\Requests\Api\V1\Property\StorePropertyRequest;
@@ -32,23 +31,50 @@ final class PropertyController extends Controller
             'q' => ['nullable', 'string', 'max:200'],
             'status' => ['nullable', 'string'], 'property_type' => ['nullable', 'string'],
             'transaction_type' => ['nullable', 'string'], 'city' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'area_min' => ['nullable', 'numeric', 'gte:0'], 'area_max' => ['nullable', 'numeric', 'gte:area_min'],
+            'price_min' => ['nullable', 'numeric', 'gte:0'], 'price_max' => ['nullable', 'numeric', 'gte:price_min'],
+            'bedrooms_min' => ['nullable', 'integer', 'between:0,255'],
+            'order' => ['nullable', 'in:newest,oldest'],
             'per_page' => ['nullable', 'integer', 'between:1,100'],
         ]);
-        $query = Property::query()->with('owners')->orderByDesc('updated_at')->orderByDesc('id');
+        $query = Property::query()->with([
+            'owners',
+            'images' => static fn ($images) => $images->orderBy('sort_order'),
+        ]);
 
-        if ($user->roleName() === RoleName::Agent) {
-            $query->where('assigned_agent_id', $user->getKey());
-        }
         foreach (['status', 'property_type', 'transaction_type', 'city'] as $field) {
             if (isset($validated[$field])) {
                 $query->where($field, $validated[$field]);
             }
         }
+        if (isset($validated['district'])) {
+            $query->where('district', 'like', '%'.addcslashes(trim($validated['district']), '%_\\').'%');
+        }
+        if (isset($validated['area_min'])) {
+            $query->where('area_sqm', '>=', $validated['area_min']);
+        }
+        if (isset($validated['area_max'])) {
+            $query->where('area_sqm', '<=', $validated['area_max']);
+        }
+        if (isset($validated['price_min'])) {
+            $query->whereRaw('COALESCE(sale_price, deposit_amount) >= ?', [$validated['price_min']]);
+        }
+        if (isset($validated['price_max'])) {
+            $query->whereRaw('COALESCE(sale_price, deposit_amount) <= ?', [$validated['price_max']]);
+        }
+        if (isset($validated['bedrooms_min'])) {
+            $query->where('bedrooms', '>=', $validated['bedrooms_min']);
+        }
         if (isset($validated['q'])) {
             $escaped = addcslashes(trim($validated['q']), '%_\\');
             $query->where(fn ($builder) => $builder->where('code', 'like', $escaped.'%')
-                ->orWhere('title', 'like', '%'.$escaped.'%'));
+                ->orWhere('title', 'like', '%'.$escaped.'%')
+                ->orWhereHas('owners', fn ($owners) => $owners->where('full_name', 'like', '%'.$escaped.'%')));
         }
+        ($validated['order'] ?? 'newest') === 'oldest'
+            ? $query->orderBy('created_at')->orderBy('id')
+            : $query->orderByDesc('created_at')->orderByDesc('id');
 
         return PropertyResource::collection($query->paginate($validated['per_page'] ?? 25));
     }
@@ -67,7 +93,7 @@ final class PropertyController extends Controller
     {
         Gate::authorize('view', $property);
 
-        return new PropertyResource($property->load(['owners', 'assignedAgent']));
+        return new PropertyResource($property->load(['owners', 'assignedAgent', 'images']));
     }
 
     public function update(

@@ -44,13 +44,13 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
                         const BrandSignature(),
                         const SizedBox(height: 26),
                         Text(
-                          'ورود به ملک بان',
+                          'به ملک‌بان خوش آمدید',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'حساب کارشناس آژانس خود را وارد کنید.',
+                          'مدیر یا کارشناس آژانس می‌تواند وارد شود.',
                           textAlign: TextAlign.center,
                         ),
                         if (auth.message != null) ...<Widget>[

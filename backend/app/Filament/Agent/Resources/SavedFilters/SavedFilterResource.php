@@ -8,6 +8,7 @@ use App\Application\SavedFilter\Services\SavedFilterService;
 use App\Filament\Agent\Resources\SavedFilters\Pages\CreateSavedFilter;
 use App\Filament\Agent\Resources\SavedFilters\Pages\EditSavedFilter;
 use App\Filament\Agent\Resources\SavedFilters\Pages\ListSavedFilters;
+use App\Filament\Shared\Support\PersianDate;
 use App\Filament\Shared\Support\PersianLabels;
 use App\Filament\Shared\Support\ResourceForms;
 use App\Models\SavedFilter;
@@ -26,6 +27,8 @@ use Illuminate\Support\Facades\Gate;
 
 final class SavedFilterResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = SavedFilter::class;
 
     protected static ?string $modelLabel = 'فیلتر ذخیره‌شده';
@@ -46,7 +49,7 @@ final class SavedFilterResource extends Resource
         return $table->columns([
             TextColumn::make('module')->label(PersianLabels::field('module'))->formatStateUsing(PersianLabels::value(...))->badge()->sortable(), TextColumn::make('name')->label(PersianLabels::field('name'))->searchable()->sortable(),
             TextColumn::make('sort')->label(PersianLabels::field('sort'))->placeholder('-'), IconColumn::make('is_default')->label(PersianLabels::field('is_default'))->boolean(),
-            TextColumn::make('updated_at')->label(PersianLabels::field('updated_at'))->dateTime()->sortable(),
+            TextColumn::make('updated_at')->label(PersianLabels::field('updated_at'))->formatStateUsing(PersianDate::format(...))->sortable(),
         ])->recordActions([
             EditAction::make(),
             Action::make('delete')->label('حذف')->color('danger')->requiresConfirmation()

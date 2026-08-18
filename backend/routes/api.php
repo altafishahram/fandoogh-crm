@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\V1\AgentPermissionController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\CustomerHistoryController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\MobileAuthController;
@@ -16,6 +18,7 @@ use App\Http\Controllers\Api\V1\PropertyNoteController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SavedFilterController;
 use App\Http\Controllers\Api\V1\SearchController;
+use App\Http\Controllers\Api\V1\SyncController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -34,9 +37,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::middleware('password.changed')->group(function (): void {
                 Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
                 Route::apiResource('owners', OwnerController::class)->only(['index', 'store', 'show', 'update']);
-                Route::apiResource('properties', PropertyController::class)->only(['index', 'store', 'show', 'update']);
+                Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
+                Route::post('/properties', [PropertyController::class, 'store'])
+                    ->middleware('idempotent:property')->name('properties.store');
+                Route::get('/properties/{property}', [PropertyController::class, 'show'])->name('properties.show');
+                Route::put('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
+                Route::patch('/properties/{property}', [PropertyController::class, 'update']);
                 Route::post('/properties/{property}/status', [PropertyController::class, 'changeStatus'])
-                    ->name('properties.status');
+                    ->middleware('idempotent:property-status')->name('properties.status');
                 Route::get('/properties/{property}/history', [PropertyHistoryController::class, 'index'])
                     ->name('properties.history');
                 Route::apiResource('properties.notes', PropertyNoteController::class)
@@ -46,7 +54,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/properties/{property}/images/{image}/content', [PropertyImageController::class, 'content'])
                     ->name('properties.images.content');
 
-                Route::apiResource('customers', CustomerController::class)->only(['index', 'store', 'show', 'update']);
+                Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+                Route::post('/customers', [CustomerController::class, 'store'])
+                    ->middleware('idempotent:customer')->name('customers.store');
+                Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+                Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+                Route::patch('/customers/{customer}', [CustomerController::class, 'update']);
+                Route::get('/customers/{customer}/history', [CustomerHistoryController::class, 'index'])
+                    ->name('customers.history');
                 Route::apiResource('customers.notes', CustomerNoteController::class)
                     ->only(['index', 'store', 'update', 'destroy'])->shallow(false);
                 Route::apiResource('saved-filters', SavedFilterController::class)
@@ -54,6 +69,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/dashboard', DashboardController::class)->name('dashboard');
                 Route::get('/reports/me', ReportController::class)->name('reports.me');
                 Route::get('/search', SearchController::class)->name('search');
+                Route::get('/sync', SyncController::class)->name('sync');
+                Route::get('/agents', [AgentPermissionController::class, 'index'])->name('agents.index');
+                Route::put('/agents/{agent}/permissions', [AgentPermissionController::class, 'update'])
+                    ->name('agents.permissions.update');
             });
         });
 });

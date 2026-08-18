@@ -25,6 +25,7 @@ final readonly class UpdatePropertyService
         private AgentAssignmentValidator $agents,
         private OptimisticLock $optimisticLock,
         private PropertyHistoryWriter $history,
+        private PropertyPricingCalculator $pricing,
         private TenantContext $tenant,
     ) {}
 
@@ -32,16 +33,22 @@ final readonly class UpdatePropertyService
     {
         return DB::transaction(function () use ($actor, $property, $data): Property {
             $locked = $this->properties->lock((int) $property->getKey());
-            $this->optimisticLock->assertCurrent($locked, $data->expectedUpdatedAt);
+            if ($data->expectedVersion !== null) {
+                $this->optimisticLock->assertVersion($locked, $data->expectedVersion);
+            } else {
+                $this->optimisticLock->assertCurrent($locked, $data->expectedUpdatedAt);
+            }
 
             if ($locked->status->isReadOnly()) {
                 throw new DomainConflictException('این ملک در وضعیت فعلی فقط‌خواندنی است.');
             }
 
             $attributes = $data->attributes;
-            if ($actor->roleName() === RoleName::Agent
-                && (array_key_exists('transaction_type', $attributes)
-                    || array_key_exists('assigned_agent_id', $attributes))) {
+            $transactionChanged = array_key_exists('transaction_type', $attributes)
+                && $attributes['transaction_type'] !== $locked->transaction_type;
+            $assignmentChanged = array_key_exists('assigned_agent_id', $attributes)
+                && $attributes['assigned_agent_id'] !== $locked->assigned_agent_id;
+            if ($actor->roleName() === RoleName::Agent && ($transactionChanged || $assignmentChanged)) {
                 throw new DomainConflictException('کارشناس اجازه تغییر نوع معامله یا مسئول ملک را ندارد.');
             }
 
@@ -55,10 +62,22 @@ final readonly class UpdatePropertyService
             }
 
             $merged = array_merge($locked->getAttributes(), $attributes);
+            if ($data->priceInputMode === 'per_sqm' && $data->salePricePerSqm !== null) {
+                $area = (string) ($merged['area_sqm'] ?? '0');
+                $attributes['sale_price'] = $this->pricing->totalFromPerSquareMeter($data->salePricePerSqm, $area);
+                $merged['sale_price'] = $attributes['sale_price'];
+            }
             $this->validator->commercial($merged);
             $before = $locked->getAttributes();
             $locked->fill($attributes);
+            $locked->lock_version = (int) $locked->lock_version + 1;
             $locked = $this->properties->save($locked);
+
+            if ($data->embeddedOwner !== null) {
+                $owner = $locked->owners()->firstOrFail();
+                $owner->fill($data->embeddedOwner->attributes());
+                $owner->save();
+            }
             $changes = $this->historyChanges($before, $locked);
 
             if ($changes !== []) {
@@ -82,6 +101,13 @@ final readonly class UpdatePropertyService
             'deposit_amount', 'monthly_rent', 'area_sqm', 'bedrooms', 'bathrooms', 'floor_number',
             'total_floors', 'year_built', 'parking_spaces', 'has_storage_room', 'has_elevator',
             'has_balcony', 'city', 'district', 'postal_code', 'latitude', 'longitude', 'available_from',
+            'plaque', 'units_per_floor', 'master_bedrooms', 'toilet_types', 'cabinet_type',
+            'heating_systems', 'cooling_systems', 'flooring_type', 'renovation_status',
+            'has_master_bathroom', 'heating_type', 'cooling_type', 'building_orientation', 'deed_type',
+            'has_loan', 'is_exchangeable', 'has_pool', 'has_jacuzzi', 'has_sauna',
+            'building_type', 'structure_type', 'has_water', 'has_electricity', 'has_gas',
+            'telephone_line_count', 'land_area', 'building_area', 'can_aggregate', 'land_frontage',
+            'delivery_status', 'evacuation_date', 'is_convertible', 'minimum_deposit',
         ];
         $changes = [];
 

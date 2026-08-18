@@ -8,12 +8,15 @@
     }
 
     :root {
-        --melkban-ink: #0f172a;
-        --melkban-muted: #64748b;
-        --melkban-glass: rgba(255, 255, 255, .70);
-        --melkban-glass-strong: rgba(255, 255, 255, .86);
-        --melkban-border: rgba(255, 255, 255, .78);
-        --melkban-shadow: 0 24px 64px rgba(15, 23, 42, .11);
+        --melkban-background: #F3F7EF;
+        --melkban-surface: #FFFFFF;
+        --melkban-primary: #6F9A73;
+        --melkban-primary-soft: #A8C6AA;
+        --melkban-accent: #426448;
+        --melkban-border: #D5E2D2;
+        --melkban-ink: #26362A;
+        --melkban-muted: #6B756C;
+        --melkban-shadow: 0 10px 28px rgba(66, 100, 72, .10);
     }
 
     html { direction: rtl; }
@@ -26,19 +29,11 @@
         font-family: 'Vazirmatn', Tahoma, sans-serif;
     }
 
-    body.fi-body {
-        color: var(--melkban-ink);
-        background:
-            radial-gradient(circle at 12% 12%, rgba(45, 212, 191, .30), transparent 28rem),
-            radial-gradient(circle at 92% 22%, rgba(56, 189, 248, .24), transparent 30rem),
-            radial-gradient(circle at 62% 96%, rgba(167, 139, 250, .20), transparent 32rem),
-            linear-gradient(145deg, #ecfeff 0%, #f8fafc 46%, #f0fdf4 100%);
-        background-attachment: fixed;
-        min-height: 100vh;
-    }
+    body.fi-body { color: var(--melkban-ink); background: var(--melkban-background); min-height: 100vh; }
 
-    .fi-sidebar,
-    .fi-topbar nav,
+    .fi-sidebar { background: #EDF4E9 !important; border-left: 1px solid var(--melkban-border); }
+    .fi-topbar nav { background: rgba(255, 255, 255, .96) !important; border-bottom: 1px solid var(--melkban-border); box-shadow: 0 4px 18px rgba(66, 100, 72, .06) !important; }
+
     .fi-section,
     .fi-ta-ctn,
     .fi-wi-stats-overview-stat,
@@ -46,115 +41,67 @@
     .fi-modal-window,
     .fi-dropdown-panel,
     .fi-fo-repeater-item,
-    .fi-fo-builder-item {
-        background: var(--melkban-glass) !important;
-        border: 1px solid var(--melkban-border) !important;
-        box-shadow: var(--melkban-shadow) !important;
-        -webkit-backdrop-filter: blur(22px) saturate(145%);
-        backdrop-filter: blur(22px) saturate(145%);
-    }
-
-    .fi-sidebar { background: rgba(248, 250, 252, .74) !important; }
-    .fi-topbar nav { margin: .65rem; border-radius: 1.35rem; }
-    .fi-main { position: relative; z-index: 1; }
-    .fi-section, .fi-ta-ctn, .fi-wi-stats-overview-stat, .fi-simple-main, .fi-modal-window {
-        border-radius: 1.55rem !important;
-        overflow: hidden;
-    }
-
+    .fi-fo-builder-item,
     .melkban-card {
-        background: var(--melkban-glass) !important;
+        background: var(--melkban-surface) !important;
         border: 1px solid var(--melkban-border) !important;
-        border-radius: 1.55rem !important;
+        border-radius: 1.25rem !important;
         box-shadow: var(--melkban-shadow) !important;
-        -webkit-backdrop-filter: blur(22px) saturate(145%);
-        backdrop-filter: blur(22px) saturate(145%);
     }
 
-    .fi-sidebar-item-button,
-    .fi-tabs-item,
-    .fi-btn,
-    .fi-input-wrp {
-        border-radius: 1rem !important;
-        transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
-    }
+    .fi-ta-record { border-radius: 1rem; }
+    .fi-ta-record-content { padding: 1rem !important; }
+    .fi-sidebar-item-button, .fi-tabs-item, .fi-btn, .fi-input-wrp { border-radius: .85rem !important; }
+    .fi-sidebar-item-button, .fi-btn { transition: transform .16s ease, background-color .16s ease, box-shadow .16s ease; }
+    .fi-btn:hover { transform: translateY(-1px); }
 
     .fi-sidebar-item-active > .fi-sidebar-item-button,
     .fi-btn-color-primary {
-        background: linear-gradient(135deg, #059669, #0d9488) !important;
-        box-shadow: 0 12px 28px rgba(5, 150, 105, .24) !important;
+        background: var(--melkban-primary) !important;
+        box-shadow: 0 8px 18px rgba(66, 100, 72, .20) !important;
     }
 
     .fi-sidebar-item-active .fi-sidebar-item-label,
     .fi-sidebar-item-active .fi-icon { color: #fff !important; }
-    .fi-btn:hover { transform: translateY(-1px); }
 
-    .fi-input-wrp,
-    .fi-select-input,
-    .fi-fo-rich-editor,
-    .fi-fo-markdown-editor {
-        background: rgba(255, 255, 255, .62) !important;
-        border-color: rgba(148, 163, 184, .24) !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6) !important;
+    .fi-input-wrp, .fi-select-input, .fi-fo-rich-editor, .fi-fo-markdown-editor {
+        background: #FBFDF9 !important;
+        border-color: var(--melkban-border) !important;
+        box-shadow: none !important;
     }
 
-    .fi-logo { font-weight: 900; letter-spacing: -.035em; }
-    .fi-header-heading { font-weight: 900; letter-spacing: -.035em; }
+    .melkban-property-image-upload .filepond--file-info { display: none !important; }
+
+    .fi-logo, .fi-header-heading { color: var(--melkban-accent); font-weight: 900; letter-spacing: -.025em; }
+    .melkban-card-link { display: block; transition: transform .16s ease, border-color .16s ease; }
+    .melkban-card-link:hover { transform: translateY(-2px); border-color: var(--melkban-primary) !important; }
 
     .melkban-credit {
-        display: flex;
-        align-items: center;
-        gap: .7rem;
-        margin: .85rem;
-        padding: .75rem;
-        color: var(--melkban-muted);
-        border: 1px solid rgba(148, 163, 184, .16);
-        border-radius: 1.1rem;
-        background: rgba(255, 255, 255, .48);
+        display: flex; align-items: center; gap: .7rem; margin: .85rem; padding: .75rem;
+        color: var(--melkban-muted); border: 1px solid var(--melkban-border); border-radius: 1rem; background: #F8FBF5;
     }
-
     .melkban-credit--compact { justify-content: center; margin-top: 1.4rem; }
     .melkban-credit__mark {
-        display: grid;
-        place-items: center;
-        width: 2.25rem;
-        height: 2.25rem;
-        flex: 0 0 auto;
-        color: #fff;
-        font-size: 1.1rem;
-        font-weight: 900;
-        border-radius: .8rem;
-        background: linear-gradient(135deg, #059669, #0d9488);
-        box-shadow: 0 8px 20px rgba(5, 150, 105, .24);
+        display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: 0 0 auto;
+        color: #fff; font-size: 1.1rem; font-weight: 900; border-radius: .75rem; background: var(--melkban-primary);
     }
-
     .melkban-credit strong, .melkban-credit small { display: block; }
     .melkban-credit strong { color: var(--melkban-ink); font-size: .86rem; }
     .melkban-credit small { margin-top: .08rem; font-size: .69rem; }
 
     .dark {
-        --melkban-ink: #f8fafc;
-        --melkban-muted: #94a3b8;
-        --melkban-glass: rgba(15, 23, 42, .68);
-        --melkban-glass-strong: rgba(15, 23, 42, .84);
-        --melkban-border: rgba(148, 163, 184, .18);
-        --melkban-shadow: 0 24px 64px rgba(2, 6, 23, .35);
+        --melkban-background: #17231A;
+        --melkban-surface: #223126;
+        --melkban-border: #3D5141;
+        --melkban-ink: #EDF4E9;
+        --melkban-muted: #A8B6AA;
+        --melkban-shadow: 0 10px 28px rgba(0, 0, 0, .20);
     }
-
-    .dark body.fi-body {
-        background:
-            radial-gradient(circle at 12% 12%, rgba(13, 148, 136, .22), transparent 28rem),
-            radial-gradient(circle at 92% 22%, rgba(14, 116, 144, .22), transparent 30rem),
-            radial-gradient(circle at 62% 96%, rgba(109, 40, 217, .15), transparent 32rem),
-            linear-gradient(145deg, #020617 0%, #0f172a 52%, #052e2b 100%);
-    }
-
-    .dark .fi-sidebar { background: rgba(2, 6, 23, .72) !important; }
-    .dark .fi-input-wrp,
-    .dark .fi-select-input,
-    .dark .fi-fo-rich-editor,
-    .dark .fi-fo-markdown-editor,
-    .dark .melkban-credit { background: rgba(15, 23, 42, .58) !important; }
+    .dark body.fi-body { background: var(--melkban-background); }
+    .dark .fi-sidebar { background: #1C2A20 !important; }
+    .dark .fi-topbar nav, .dark .fi-input-wrp, .dark .fi-select-input,
+    .dark .fi-fo-rich-editor, .dark .fi-fo-markdown-editor, .dark .melkban-credit { background: #26372A !important; }
+    .dark .fi-logo, .dark .fi-header-heading, .dark .melkban-credit strong { color: var(--melkban-ink); }
 
     @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }

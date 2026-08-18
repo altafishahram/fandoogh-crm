@@ -23,8 +23,7 @@ final class OwnerPolicy
             return false;
         }
 
-        return $user->roleName() === RoleName::AgencyManager
-            || $owner->properties()->where('assigned_agent_id', $user->getKey())->exists();
+        return true;
     }
 
     public function create(User $user): bool
@@ -39,11 +38,9 @@ final class OwnerPolicy
             return false;
         }
 
-        return $user->roleName() === RoleName::AgencyManager
-            || $owner->properties()
-                ->where('assigned_agent_id', $user->getKey())
-                ->whereIn('status', [PropertyStatus::Available->value, PropertyStatus::Reserved->value])
-                ->exists();
+        return $owner->properties()
+            ->whereIn('status', [PropertyStatus::Available->value, PropertyStatus::Reserved->value])
+            ->exists();
     }
 
     public function delete(User $user, Owner $owner): bool

@@ -15,8 +15,8 @@ final class PanelBranding
         return $panel
             ->brandName("ملک بان · {$section}")
             ->colors([
-                'primary' => Color::Emerald,
-                'gray' => Color::Slate,
+                'primary' => Color::hex('#6F9A73'),
+                'gray' => Color::hex('#6B756C'),
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,

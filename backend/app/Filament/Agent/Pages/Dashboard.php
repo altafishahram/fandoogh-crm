@@ -10,7 +10,7 @@ use Filament\Pages\Dashboard as BaseDashboard;
 
 final class Dashboard extends BaseDashboard
 {
-    protected static ?string $title = 'داشبورد من';
+    protected static ?string $title = 'خانه';
 
     public function getWidgets(): array
     {

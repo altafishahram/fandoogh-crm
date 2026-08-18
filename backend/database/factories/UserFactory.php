@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Domain\User\Enums\PermissionName;
 use App\Domain\User\Enums\RoleName;
 use App\Models\Agency;
 use App\Models\User;
@@ -74,5 +75,11 @@ final class UserFactory extends Factory
     {
         Role::findOrCreate($roleName->value, 'web');
         $user->syncRoles([$roleName->value]);
+        $user->syncPermissions($roleName === RoleName::Agent
+            ? array_map(
+                static fn (PermissionName $permission): string => $permission->value,
+                RoleName::agentDefaultPermissions(),
+            )
+            : []);
     }
 }

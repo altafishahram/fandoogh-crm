@@ -51,34 +51,35 @@ final class ApiFailure implements Exception {
         _ => 'UNEXPECTED_ERROR',
       };
 
-  static String _persianMessage(String code, String? serverMessage) =>
-      switch (code) {
-        'BAD_REQUEST' => 'ساختار درخواست معتبر نیست.',
-        'UNAUTHENTICATED' => 'برای ادامه دوباره وارد حساب خود شوید.',
-        'FORBIDDEN' => 'اجازه انجام این عملیات را ندارید.',
-        'AGENCY_INACTIVE' => 'دسترسی آژانس غیرفعال شده است.',
-        'PASSWORD_CHANGE_REQUIRED' =>
-          'پیش از ادامه باید رمز عبور خود را تغییر دهید.',
-        'RESOURCE_NOT_FOUND' => 'اطلاعات درخواستی پیدا نشد.',
-        'DOMAIN_CONFLICT' => 'این عملیات با وضعیت فعلی اطلاعات سازگار نیست.',
-        'STALE_RECORD' =>
-          'این رکورد هم‌زمان تغییر کرده است؛ اطلاعات را تازه‌سازی کنید.',
-        'FILE_TOO_LARGE' => 'حجم فایل بیشتر از حد مجاز است.',
-        'UNSUPPORTED_MEDIA_TYPE' => 'نوع فایل تصویری پشتیبانی نمی‌شود.',
-        'VALIDATION_FAILED' => 'اطلاعات واردشده معتبر نیست.',
-        'INVALID_FILTER' => 'فیلتر انتخاب‌شده معتبر نیست.',
-        'RATE_LIMITED' =>
-          'تعداد درخواست‌ها بیش از حد مجاز است؛ کمی بعد تلاش کنید.',
-        'NETWORK_TIMEOUT' => 'زمان انتظار پاسخ سرور تمام شد.',
-        'NETWORK_UNAVAILABLE' => 'ارتباط با سرور برقرار نشد.',
-        'INTERNAL_ERROR' || 'UNEXPECTED_ERROR' =>
-          'خطای پیش‌بینی‌نشده‌ای رخ داد؛ لطفاً دوباره تلاش کنید.',
-        _
-            when serverMessage != null &&
-                RegExp(r'[\u0600-\u06FF]').hasMatch(serverMessage) =>
-          serverMessage,
-        _ => 'انجام درخواست ممکن نشد؛ لطفاً دوباره تلاش کنید.',
-      };
+  static String _persianMessage(
+    String code,
+    String? serverMessage,
+  ) => switch (code) {
+    'BAD_REQUEST' => 'ساختار درخواست معتبر نیست.',
+    'UNAUTHENTICATED' => 'برای ادامه دوباره وارد حساب خود شوید.',
+    'FORBIDDEN' => 'اجازه انجام این عملیات را ندارید.',
+    'AGENCY_INACTIVE' => 'دسترسی آژانس غیرفعال شده است.',
+    'PASSWORD_CHANGE_REQUIRED' =>
+      'پیش از ادامه باید رمز عبور خود را تغییر دهید.',
+    'RESOURCE_NOT_FOUND' => 'اطلاعات درخواستی پیدا نشد.',
+    'DOMAIN_CONFLICT' => 'این عملیات با وضعیت فعلی اطلاعات سازگار نیست.',
+    'STALE_RECORD' =>
+      'ثبت هم‌زمان اطلاعات امکان‌پذیر نیست؛ اطلاعات را تازه‌سازی و دوباره تلاش کنید.',
+    'FILE_TOO_LARGE' => 'حجم فایل بیشتر از حد مجاز است.',
+    'UNSUPPORTED_MEDIA_TYPE' => 'نوع فایل تصویری پشتیبانی نمی‌شود.',
+    'VALIDATION_FAILED' => 'اطلاعات واردشده معتبر نیست.',
+    'INVALID_FILTER' => 'فیلتر انتخاب‌شده معتبر نیست.',
+    'RATE_LIMITED' => 'تعداد درخواست‌ها بیش از حد مجاز است؛ کمی بعد تلاش کنید.',
+    'NETWORK_TIMEOUT' => 'زمان انتظار پاسخ سرور تمام شد.',
+    'NETWORK_UNAVAILABLE' => 'ارتباط با سرور برقرار نشد.',
+    'INTERNAL_ERROR' || 'UNEXPECTED_ERROR' =>
+      'خطای پیش‌بینی‌نشده‌ای رخ داد؛ لطفاً دوباره تلاش کنید.',
+    _
+        when serverMessage != null &&
+            RegExp(r'[\u0600-\u06FF]').hasMatch(serverMessage) =>
+      serverMessage,
+    _ => 'انجام درخواست ممکن نشد؛ لطفاً دوباره تلاش کنید.',
+  };
 
   @override
   String toString() => 'ApiFailure(code: $code, requestId: $requestId)';

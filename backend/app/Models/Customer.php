@@ -41,6 +41,15 @@ class Customer extends Model
         'email', 'preferred_contact_method', 'intent', 'status', 'preferred_property_types',
         'budget_min', 'budget_max', 'desired_city', 'desired_district', 'min_area_sqm',
         'max_area_sqm', 'min_bedrooms', 'converted_property_id',
+        'full_name', 'created_by_role', 'desired_property_type', 'rental_deposit_min',
+        'rental_deposit_max', 'rental_rent_min', 'rental_rent_max', 'accepts_rent_conversion',
+        'toilet_types', 'has_master_bathroom', 'cabinet_type', 'heating_type', 'cooling_type',
+        'flooring_type', 'renovation_status', 'building_orientation', 'deed_type', 'has_loan',
+        'is_exchangeable', 'has_pool', 'has_jacuzzi', 'has_sauna', 'description', 'lock_version',
+        'building_type', 'structure_type', 'has_water', 'has_electricity', 'has_gas',
+        'telephone_line_count', 'land_area', 'building_area',
+        'min_parking_spaces', 'has_parking', 'has_storage_room', 'owner_resides',
+        'has_elevator', 'has_balcony',
     ];
 
     /** @return BelongsTo<User, $this> */
@@ -65,6 +74,12 @@ class Customer extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(CustomerNote::class);
+    }
+
+    /** @return HasMany<CustomerHistory, $this> */
+    public function histories(): HasMany
+    {
+        return $this->hasMany(CustomerHistory::class);
     }
 
     /** @return Attribute<string, string> */
@@ -104,8 +119,18 @@ class Customer extends Model
             'intent' => CustomerIntent::class,
             'status' => CustomerStatus::class,
             'preferred_property_types' => 'array',
+            'toilet_types' => 'array',
             'budget_min' => 'decimal:2', 'budget_max' => 'decimal:2',
             'min_area_sqm' => 'decimal:2', 'max_area_sqm' => 'decimal:2',
+            'rental_deposit_min' => 'decimal:2', 'rental_deposit_max' => 'decimal:2',
+            'rental_rent_min' => 'decimal:2', 'rental_rent_max' => 'decimal:2',
+            'accepts_rent_conversion' => 'boolean', 'has_master_bathroom' => 'boolean',
+            'has_loan' => 'boolean', 'is_exchangeable' => 'boolean', 'has_pool' => 'boolean',
+            'has_jacuzzi' => 'boolean', 'has_sauna' => 'boolean', 'lock_version' => 'integer',
+            'has_water' => 'boolean', 'has_electricity' => 'boolean', 'has_gas' => 'boolean',
+            'min_parking_spaces' => 'integer', 'has_parking' => 'boolean',
+            'has_storage_room' => 'boolean', 'owner_resides' => 'boolean',
+            'has_elevator' => 'boolean', 'has_balcony' => 'boolean',
         ];
     }
 }

@@ -1,6 +1,7 @@
 import 'package:fandoogh_crm/core/auth/auth_state.dart';
 import 'package:fandoogh_crm/core/errors/api_failure.dart';
 import 'package:fandoogh_crm/core/network/api_client.dart';
+import 'package:fandoogh_crm/core/offline/offline_store.dart';
 import 'package:fandoogh_crm/core/storage/token_store.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,13 +12,19 @@ final authControllerProvider = NotifierProvider<AuthController, AuthState>(
 final class AuthController extends Notifier<AuthState> {
   late ApiClient _client;
   late TokenStore _tokens;
+  late OfflineStore _offline;
 
   @override
   AuthState build() {
     _client = ref.read(apiClientProvider);
     _tokens = ref.read(tokenStoreProvider);
+    _offline = ref.read(offlineStoreProvider);
     _client.onAccessFailure = _handleAccessFailure;
-    ref.onDispose(() => _client.onAccessFailure = null);
+    _client.onConnectivityChanged = _handleConnectivityChange;
+    ref.onDispose(() {
+      _client.onAccessFailure = null;
+      _client.onConnectivityChanged = null;
+    });
     Future<void>.microtask(restoreSession);
     return const AuthState.restoring();
   }
@@ -32,6 +39,7 @@ final class AuthController extends Notifier<AuthState> {
       _client.token = token;
       final response = await _client.dio.get<Map<String, dynamic>>('/auth/me');
       final user = _data(response.data);
+      await _rememberUser(user);
       state = AuthState(
         status: user['must_change_password'] == true
             ? AuthStatus.passwordChangeRequired
@@ -39,8 +47,22 @@ final class AuthController extends Notifier<AuthState> {
         user: user,
       );
     } catch (error) {
-      await _clearCredentials();
       final failure = apiFailureFrom(error);
+      final cachedUser = await _tokens.readUser();
+      if ((failure.code == 'NETWORK_UNAVAILABLE' ||
+              failure.code == 'NETWORK_TIMEOUT') &&
+          cachedUser != null) {
+        _offline.configure(cachedUser);
+        state = AuthState(
+          status: AuthStatus.signedIn,
+          user: cachedUser,
+          isOffline: true,
+          message:
+              'برنامه در حالت آفلاین است؛ اطلاعات ذخیره‌شده نمایش داده می‌شود.',
+        );
+        return;
+      }
+      await _clearCredentials();
       state = AuthState.signedOut(
         message: failure.statusCode == 401
             ? 'نشست شما پایان یافته است؛ دوباره وارد شوید.'
@@ -69,7 +91,9 @@ final class AuthController extends Notifier<AuthState> {
         state = const AuthState(status: AuthStatus.passwordChangeRequired);
       } else {
         final me = await _client.dio.get<Map<String, dynamic>>('/auth/me');
-        state = AuthState(status: AuthStatus.signedIn, user: _data(me.data));
+        final user = _data(me.data);
+        await _rememberUser(user);
+        state = AuthState(status: AuthStatus.signedIn, user: user);
       }
       return true;
     } catch (error) {
@@ -99,7 +123,9 @@ final class AuthController extends Notifier<AuthState> {
       await _tokens.write(token);
       _client.token = token;
       final me = await _client.dio.get<Map<String, dynamic>>('/auth/me');
-      state = AuthState(status: AuthStatus.signedIn, user: _data(me.data));
+      final user = _data(me.data);
+      await _rememberUser(user);
+      state = AuthState(status: AuthStatus.signedIn, user: user);
       return true;
     } catch (error) {
       state = state.copyWith(
@@ -125,10 +151,9 @@ final class AuthController extends Notifier<AuthState> {
           'phone': phone?.trim().isEmpty == true ? null : phone?.trim(),
         },
       );
-      state = AuthState(
-        status: AuthStatus.signedIn,
-        user: _data(response.data),
-      );
+      final user = _data(response.data);
+      await _rememberUser(user);
+      state = AuthState(status: AuthStatus.signedIn, user: user);
       return true;
     } catch (error) {
       state = state.copyWith(
@@ -154,6 +179,17 @@ final class AuthController extends Notifier<AuthState> {
   }
 
   void clearMessage() => state = state.copyWith(clearMessage: true);
+
+  void _handleConnectivityChange(bool isOnline) {
+    if (!state.isAuthenticated || state.isOffline == !isOnline) return;
+    state = state.copyWith(
+      isOffline: !isOnline,
+      clearMessage: isOnline,
+      message: isOnline
+          ? null
+          : 'برنامه در حالت آفلاین است؛ اطلاعات ذخیره‌شده نمایش داده می‌شود.',
+    );
+  }
 
   Future<void> _handleAccessFailure(ApiFailure failure) async {
     if (failure.code == 'AGENCY_INACTIVE') {
@@ -181,7 +217,13 @@ final class AuthController extends Notifier<AuthState> {
 
   Future<void> _clearCredentials() async {
     _client.token = null;
+    await _offline.clearScope();
     await _tokens.clear();
+  }
+
+  Future<void> _rememberUser(Map<String, dynamic> user) async {
+    await _tokens.writeUser(user);
+    _offline.configure(user);
   }
 
   static Map<String, dynamic> _data(Map<String, dynamic>? envelope) {

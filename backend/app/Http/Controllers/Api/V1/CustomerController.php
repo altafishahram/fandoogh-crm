@@ -6,7 +6,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Application\Customer\Services\CreateCustomerService;
 use App\Application\Customer\Services\UpdateCustomerService;
-use App\Domain\User\Enums\RoleName;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Customer\StoreCustomerRequest;
 use App\Http\Requests\Api\V1\Customer\UpdateCustomerRequest;
@@ -29,23 +28,32 @@ final class CustomerController extends Controller
         $validated = $request->validate([
             'q' => ['nullable', 'string', 'max:200'], 'status' => ['nullable', 'string'],
             'intent' => ['nullable', 'string'], 'per_page' => ['nullable', 'integer', 'between:1,100'],
+            'property_type' => ['nullable', 'string'], 'district' => ['nullable', 'string', 'max:100'],
+            'order' => ['nullable', 'in:newest,oldest'],
         ]);
-        $query = Customer::query()->orderByDesc('updated_at')->orderByDesc('id');
-        if ($user->roleName() === RoleName::Agent) {
-            $query->where('assigned_agent_id', $user->getKey());
-        }
+        $query = Customer::query();
         foreach (['status', 'intent'] as $field) {
             if (isset($validated[$field])) {
                 $query->where($field, $validated[$field]);
             }
         }
+        if (isset($validated['property_type'])) {
+            $query->where('desired_property_type', $validated['property_type']);
+        }
+        if (isset($validated['district'])) {
+            $query->where('desired_district', 'like', '%'.addcslashes(trim($validated['district']), '%_\\').'%');
+        }
         if (isset($validated['q'])) {
             $escaped = addcslashes(trim($validated['q']), '%_\\');
-            $query->where(fn ($builder) => $builder->where('first_name', 'like', $escaped.'%')
+            $query->where(fn ($builder) => $builder->where('full_name', 'like', '%'.$escaped.'%')
+                ->orWhere('first_name', 'like', $escaped.'%')
                 ->orWhere('last_name', 'like', $escaped.'%')
                 ->orWhere('mobile', 'like', $escaped.'%')
                 ->orWhere('email', 'like', $escaped.'%'));
         }
+        ($validated['order'] ?? 'newest') === 'oldest'
+            ? $query->orderBy('created_at')->orderBy('id')
+            : $query->orderByDesc('created_at')->orderByDesc('id');
 
         return CustomerResource::collection($query->paginate($validated['per_page'] ?? 25));
     }
@@ -73,6 +81,10 @@ final class CustomerController extends Controller
         UpdateCustomerService $service,
     ): CustomerResource {
         Gate::authorize('update', $customer);
+        $requestedStatus = $request->validated('status');
+        if (is_string($requestedStatus) && $requestedStatus !== $customer->status->value) {
+            Gate::authorize('changeStatus', $customer);
+        }
         /** @var User $user */
         $user = $request->user();
 
