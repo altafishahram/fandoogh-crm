@@ -30,6 +30,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
+use Illuminate\Validation\ClosureValidationRule;
 
 final class ResourceForms
 {
@@ -267,13 +268,13 @@ final class ResourceForms
                         ->label(fn (Get $get): string => $get('transaction_type') === TransactionType::Sale->value
                             && $get('delivery_status') === DeliveryStatus::Ready->value
                             ? 'تاریخ آماده تحویل'
-                            : $get('transaction_type') === TransactionType::Sale->value
-                            && $get('delivery_status') === DeliveryStatus::TenantOccupied->value
-                            ? 'تاریخ تخلیه مستأجر'
-                            : 'تاریخ تخلیه')
+                            : ($get('transaction_type') === TransactionType::Sale->value
+                                && $get('delivery_status') === DeliveryStatus::TenantOccupied->value
+                                ? 'تاریخ تخلیه مستأجر'
+                                : 'تاریخ تخلیه'))
                         ->placeholder('۱۷ مرداد ۱۴۰۵')
                         ->helperText('روز، نام ماه و سال شمسی')
-                        ->rules([static function (string $attribute, mixed $value, Closure $fail): void {
+                        ->rules([new ClosureValidationRule(static function (string $attribute, mixed $value, Closure $fail): void {
                             if (blank($value)) {
                                 return;
                             }
@@ -282,17 +283,15 @@ final class ResourceForms
                             } catch (\InvalidArgumentException) {
                                 $fail('تاریخ شمسی باید مانند «۱۷ مرداد ۱۴۰۵» وارد شود.');
                             }
-                        }])
-                        ->required(fn (Get $get): bool =>
-                            ($get('transaction_type') === TransactionType::Sale->value
+                        })])
+                        ->required(fn (Get $get): bool => ($get('transaction_type') === TransactionType::Sale->value
                                 && in_array($get('delivery_status'), [
                                     DeliveryStatus::Ready->value,
                                     DeliveryStatus::TenantOccupied->value,
                                 ], true))
                             || ($get('transaction_type') === TransactionType::Rent->value
                                 && $get('delivery_status') === DeliveryStatus::Dated->value))
-                        ->visible(fn (Get $get): bool =>
-                            ($get('transaction_type') === TransactionType::Sale->value
+                        ->visible(fn (Get $get): bool => ($get('transaction_type') === TransactionType::Sale->value
                                 && in_array($get('delivery_status'), [
                                     DeliveryStatus::Ready->value,
                                     DeliveryStatus::TenantOccupied->value,

@@ -30,7 +30,7 @@ jobs:
           --health-timeout=5s
           --health-retries=20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3.32'
@@ -82,7 +82,7 @@ jobs:
       run:
         working-directory: mobile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.44.6
@@ -92,11 +92,11 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build apk --debug
+      - run: flutter build apk --debug --flavor internal
 
   documentation:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: python scripts/check_markdown.py

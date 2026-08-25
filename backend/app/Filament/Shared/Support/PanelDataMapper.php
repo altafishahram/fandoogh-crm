@@ -71,7 +71,7 @@ final class PanelDataMapper
             (bool) ($building['has_storage_room'] ?? false), (bool) ($building['has_elevator'] ?? false),
             (bool) ($building['has_balcony'] ?? false), self::string($data, 'city'), self::string($data, 'district'),
             (string) $data['street_address'], self::string($data, 'postal_code'),
-            $availableFrom, null, null, [],
+            null, null, $availableFrom, [],
             new EmbeddedOwnerData(
                 (string) ($owner['full_name'] ?? ''), (string) ($owner['mobile'] ?? ''),
                 self::string($owner, 'phone'), self::string($owner, 'notes'),

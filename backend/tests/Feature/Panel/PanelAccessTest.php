@@ -168,6 +168,7 @@ final class PanelAccessTest extends DomainTestCase
                 'street_address' => 'خیابان نمونه، کوچه یکم',
                 'plaque' => '۱۲',
                 'delivery_status' => 'ready',
+                'evacuation_date_display' => '۱۷ مرداد ۱۴۰۵',
                 'bedrooms' => 2,
                 'parking_spaces' => 1,
                 'owner' => [
