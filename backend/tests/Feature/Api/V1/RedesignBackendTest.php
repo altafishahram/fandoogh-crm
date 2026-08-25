@@ -113,7 +113,7 @@ final class RedesignBackendTest extends DomainTestCase
         Sanctum::actingAs($agent, ['mobile']);
 
         $this->postJson('/api/v1/customers', [
-            ...$this->rentalCustomerPayload(),
+            ...$this->purchaseCustomerPayload(),
             'desired_property_type' => 'bureau',
             'preferred_property_types' => ['bureau'],
             'toilet_types' => ['iranian', 'western'],
@@ -537,6 +537,21 @@ final class RedesignBackendTest extends DomainTestCase
             'rental_rent_min' => '0',
             'rental_rent_max' => '750000',
             'accepts_rent_conversion' => true,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function purchaseCustomerPayload(): array
+    {
+        return [
+            'full_name' => 'مشتری خریدی',
+            'mobile' => '+989129876543',
+            'intent' => 'buy',
+            'desired_property_type' => 'apartment',
+            'min_area_sqm' => '70',
+            'max_area_sqm' => '110',
+            'budget_min' => '750000000',
+            'budget_max' => '1000000000',
         ];
     }
 }
