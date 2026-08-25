@@ -80,6 +80,7 @@ final class PropertiesController
   String? _priceMin;
   String? _priceMax;
   String? _bedroomsMin;
+  Map<String, Object?> _featureFilters = const <String, Object?>{};
   String _order = 'newest';
 
   @override
@@ -96,6 +97,7 @@ final class PropertiesController
     'price_min': _priceMin,
     'price_max': _priceMax,
     'bedrooms_min': _bedroomsMin,
+    ..._featureFilters,
     'order': _order,
   };
 
@@ -110,6 +112,7 @@ final class PropertiesController
     String? priceMin,
     String? priceMax,
     String? bedroomsMin,
+    Map<String, Object?> features = const <String, Object?>{},
     String order = 'newest',
   }) async {
     _query = query?.trim() ?? '';
@@ -124,6 +127,11 @@ final class PropertiesController
     _bedroomsMin = bedroomsMin?.trim().isEmpty == true
         ? null
         : bedroomsMin?.trim();
+    _featureFilters = Map<String, Object?>.fromEntries(
+      features.entries.where(
+        (entry) => entry.value != null && entry.value != '',
+      ),
+    );
     _order = order;
     state = const AsyncLoading<PagedResult<PropertyRecord>>();
     state = await AsyncValue.guard(() => _load(1));
@@ -140,6 +148,23 @@ final class PropertiesController
     priceMin: '${filters['price_min'] ?? ''}',
     priceMax: '${filters['price_max'] ?? ''}',
     bedroomsMin: '${filters['bedrooms_min'] ?? ''}',
+    features: Map<String, Object?>.fromEntries(
+      filters.entries.where(
+        (entry) => !<String>{
+          'q',
+          'status',
+          'property_type',
+          'transaction_type',
+          'district',
+          'area_min',
+          'area_max',
+          'price_min',
+          'price_max',
+          'bedrooms_min',
+          'order',
+        }.contains(entry.key),
+      ),
+    ),
     order: '${filters['order'] ?? 'newest'}',
   );
 
@@ -360,11 +385,25 @@ class PropertyRepository extends ApiRepository {
       'status',
       'property_type',
       'transaction_type',
-      'city',
-      'district',
+      'delivery_status',
+      'building_type',
+      'cabinet_type',
+      'heating_type',
+      'cooling_type',
+      'flooring_type',
+      'renovation_status',
+      'building_orientation',
+      'deed_type',
     ]) {
       final expected = filters[key];
       if (expected != null && expected != '' && '${item[key]}' != '$expected') {
+        return false;
+      }
+    }
+    for (final key in <String>['city', 'district']) {
+      final expected = '${filters[key] ?? ''}'.trim().toLowerCase();
+      if (expected.isNotEmpty &&
+          !'${item[key] ?? ''}'.toLowerCase().contains(expected)) {
         return false;
       }
     }
@@ -381,10 +420,72 @@ class PropertyRepository extends ApiRepository {
     final priceMax = num.tryParse('${filters['price_max'] ?? ''}');
     if (priceMin != null && (price == null || price < priceMin)) return false;
     if (priceMax != null && (price == null || price > priceMax)) return false;
+    final transaction = '${item['transaction_type'] ?? ''}';
+    final salePrice = num.tryParse('${item['sale_price'] ?? ''}');
+    final deposit = num.tryParse('${item['deposit_amount'] ?? ''}');
+    final rent = num.tryParse('${item['monthly_rent'] ?? ''}');
+    final salePriceMin = num.tryParse('${filters['sale_price_min'] ?? ''}');
+    final salePriceMax = num.tryParse('${filters['sale_price_max'] ?? ''}');
+    final depositMin = num.tryParse('${filters['deposit_min'] ?? ''}');
+    final depositMax = num.tryParse('${filters['deposit_max'] ?? ''}');
+    final rentMin = num.tryParse('${filters['rent_min'] ?? ''}');
+    final rentMax = num.tryParse('${filters['rent_max'] ?? ''}');
+    if (salePriceMin != null &&
+        (transaction != 'sale' ||
+            salePrice == null ||
+            salePrice < salePriceMin)) {
+      return false;
+    }
+    if (salePriceMax != null &&
+        (transaction != 'sale' ||
+            salePrice == null ||
+            salePrice > salePriceMax)) {
+      return false;
+    }
+    if (depositMin != null &&
+        (transaction != 'rent' || deposit == null || deposit < depositMin)) {
+      return false;
+    }
+    if (depositMax != null &&
+        (transaction != 'rent' || deposit == null || deposit > depositMax)) {
+      return false;
+    }
+    if (rentMin != null &&
+        (transaction != 'rent' || rent == null || rent < rentMin)) {
+      return false;
+    }
+    if (rentMax != null &&
+        (transaction != 'rent' || rent == null || rent > rentMax)) {
+      return false;
+    }
     final bedrooms = (item['bedrooms'] as num?)?.toInt();
     final bedroomsMin = int.tryParse('${filters['bedrooms_min'] ?? ''}');
     if (bedroomsMin != null && (bedrooms == null || bedrooms < bedroomsMin)) {
       return false;
+    }
+    final parking = (item['parking_spaces'] as num?)?.toInt();
+    final parkingMin = int.tryParse('${filters['parking_min'] ?? ''}');
+    if (parkingMin != null && (parking == null || parking < parkingMin)) {
+      return false;
+    }
+    for (final key in <String>[
+      'has_storage_room',
+      'has_elevator',
+      'has_balcony',
+      'has_master_bathroom',
+      'has_loan',
+      'is_exchangeable',
+      'has_pool',
+      'has_jacuzzi',
+      'has_sauna',
+      'has_water',
+      'has_electricity',
+      'has_gas',
+      'can_aggregate',
+    ]) {
+      if (filters[key] == true && item[key] != true && item[key] != 1) {
+        return false;
+      }
     }
     final q = '${filters['q'] ?? ''}'.trim().toLowerCase();
     if (q.isEmpty) return true;

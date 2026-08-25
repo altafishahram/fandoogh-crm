@@ -57,6 +57,7 @@ final class CustomersController
   String? _intent;
   String? _propertyType;
   String? _district;
+  Map<String, Object?> _requirementFilters = const <String, Object?>{};
   String _order = 'newest';
 
   @override
@@ -68,6 +69,7 @@ final class CustomersController
     'intent': _intent,
     'property_type': _propertyType,
     'district': _district,
+    ..._requirementFilters,
     'order': _order,
   };
 
@@ -77,6 +79,7 @@ final class CustomersController
     String? intent,
     String? propertyType,
     String? district,
+    Map<String, Object?> requirements = const <String, Object?>{},
     String order = 'newest',
   }) async {
     _query = query?.trim() ?? '';
@@ -84,6 +87,11 @@ final class CustomersController
     _intent = intent;
     _propertyType = propertyType;
     _district = district?.trim().isEmpty == true ? null : district?.trim();
+    _requirementFilters = Map<String, Object?>.fromEntries(
+      requirements.entries.where(
+        (entry) => entry.value != null && entry.value != '',
+      ),
+    );
     _order = order;
     state = const AsyncLoading<PagedResult<CustomerRecord>>();
     state = await AsyncValue.guard(() => _load(1));
@@ -95,6 +103,18 @@ final class CustomersController
     intent: filters['intent'] as String?,
     propertyType: filters['property_type'] as String?,
     district: filters['district'] as String?,
+    requirements: Map<String, Object?>.fromEntries(
+      filters.entries.where(
+        (entry) => !<String>{
+          'q',
+          'status',
+          'intent',
+          'property_type',
+          'district',
+          'order',
+        }.contains(entry.key),
+      ),
+    ),
     order: '${filters['order'] ?? 'newest'}',
   );
 
@@ -236,10 +256,83 @@ class CustomerRepository extends ApiRepository {
         '${item['desired_property_type']}' != '$propertyType') {
       return false;
     }
-    final district = '${filters['district'] ?? ''}'.trim().toLowerCase();
-    if (district.isNotEmpty &&
-        !'${item['desired_district'] ?? ''}'.toLowerCase().contains(district)) {
+    for (final entry in <String, String>{
+      'city': 'desired_city',
+      'district': 'desired_district',
+    }.entries) {
+      final expected = '${filters[entry.key] ?? ''}'.trim().toLowerCase();
+      if (expected.isNotEmpty &&
+          !'${item[entry.value] ?? ''}'.toLowerCase().contains(expected)) {
+        return false;
+      }
+    }
+    final minArea = num.tryParse('${filters['area_min'] ?? ''}');
+    final maxArea = num.tryParse('${filters['area_max'] ?? ''}');
+    final itemMinArea = num.tryParse('${item['min_area_sqm'] ?? ''}');
+    final itemMaxArea = num.tryParse('${item['max_area_sqm'] ?? ''}');
+    if (minArea != null && (itemMinArea == null || itemMinArea < minArea)) {
       return false;
+    }
+    if (maxArea != null && (itemMaxArea == null || itemMaxArea > maxArea)) {
+      return false;
+    }
+    final budgetMin = num.tryParse('${filters['budget_min'] ?? ''}');
+    final budgetMax = num.tryParse('${filters['budget_max'] ?? ''}');
+    final itemBudgetMin = num.tryParse('${item['budget_min'] ?? ''}');
+    final itemBudgetMax = num.tryParse('${item['budget_max'] ?? ''}');
+    if (budgetMin != null &&
+        (itemBudgetMin == null || itemBudgetMin < budgetMin)) {
+      return false;
+    }
+    if (budgetMax != null &&
+        (itemBudgetMax == null || itemBudgetMax > budgetMax)) {
+      return false;
+    }
+    for (final pair in <String, String>{
+      'deposit_min': 'rental_deposit_min',
+      'deposit_max': 'rental_deposit_max',
+      'rent_min': 'rental_rent_min',
+      'rent_max': 'rental_rent_max',
+    }.entries) {
+      final expected = num.tryParse('${filters[pair.key] ?? ''}');
+      final actual = num.tryParse('${item[pair.value] ?? ''}');
+      if (expected == null) continue;
+      if (actual == null ||
+          (pair.key.endsWith('_min') && actual < expected) ||
+          (pair.key.endsWith('_max') && actual > expected)) {
+        return false;
+      }
+    }
+    final bedrooms = (item['min_bedrooms'] as num?)?.toInt();
+    final bedroomsMin = int.tryParse('${filters['bedrooms_min'] ?? ''}');
+    if (bedroomsMin != null && (bedrooms == null || bedrooms < bedroomsMin)) {
+      return false;
+    }
+    final parking = (item['min_parking_spaces'] as num?)?.toInt();
+    final parkingMin = int.tryParse('${filters['parking_min'] ?? ''}');
+    if (parkingMin != null && (parking == null || parking < parkingMin)) {
+      return false;
+    }
+    for (final key in <String>[
+      'has_parking',
+      'has_storage_room',
+      'owner_resides',
+      'has_elevator',
+      'has_balcony',
+      'has_master_bathroom',
+      'has_loan',
+      'is_exchangeable',
+      'has_pool',
+      'has_jacuzzi',
+      'has_sauna',
+      'has_water',
+      'has_electricity',
+      'has_gas',
+      'accepts_rent_conversion',
+    ]) {
+      if (filters[key] == true && item[key] != true && item[key] != 1) {
+        return false;
+      }
     }
     final q = '${filters['q'] ?? ''}'.trim().toLowerCase();
     if (q.isEmpty) return true;

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppTheme {
-  static const background = Color(0xFFF3F7EF);
-  static const primary = Color(0xFF6F9A73);
-  static const primarySoft = Color(0xFFA8C6AA);
-  static const accent = Color(0xFF426448);
-  static const border = Color(0xFFD5E2D2);
+  static const background = Color(0xFFF7F9F8);
+  static const primary = Color(0xFF007C83);
+  static const primarySoft = Color(0xFFB2DFDB);
+  static const accent = Color(0xFF005A60);
+  static const border = Color(0xFFD5E5E2);
 
   static ThemeData get light => _build(Brightness.light);
 
@@ -17,13 +17,13 @@ abstract final class AppTheme {
         ColorScheme.fromSeed(
           seedColor: primary,
           brightness: brightness,
-          surface: dark ? const Color(0xFF223126) : Colors.white,
+          surface: dark ? const Color(0xFF172C2D) : Colors.white,
         ).copyWith(
           primary: primary,
           secondary: primarySoft,
-          tertiary: accent,
-          surfaceContainerLowest: dark ? const Color(0xFF17231A) : background,
-          outlineVariant: dark ? const Color(0xFF3D5141) : border,
+          tertiary: const Color(0xFFE19A1A),
+          surfaceContainerLowest: dark ? const Color(0xFF102021) : background,
+          outlineVariant: dark ? const Color(0xFF385052) : border,
         );
 
     final rounded = RoundedRectangleBorder(
@@ -36,13 +36,13 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       fontFamily: 'Vazirmatn',
       useMaterial3: true,
-      scaffoldBackgroundColor: dark ? const Color(0xFF17231A) : background,
-      canvasColor: dark ? const Color(0xFF17231A) : background,
+      scaffoldBackgroundColor: dark ? const Color(0xFF102021) : background,
+      canvasColor: dark ? const Color(0xFF102021) : background,
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: dark ? const Color(0xFF17231A) : background,
+        backgroundColor: dark ? const Color(0xFF102021) : background,
         surfaceTintColor: Colors.transparent,
         foregroundColor: dark ? const Color(0xFFEDF4E9) : accent,
         titleTextStyle: TextStyle(
@@ -61,7 +61,7 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: dark ? const Color(0xFF26372A) : const Color(0xFFFBFDF9),
+        fillColor: dark ? const Color(0xFF1D3536) : const Color(0xFFFBFDFB),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colorScheme.outlineVariant),

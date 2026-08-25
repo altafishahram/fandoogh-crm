@@ -34,7 +34,26 @@ final class PropertyController extends Controller
             'district' => ['nullable', 'string', 'max:100'],
             'area_min' => ['nullable', 'numeric', 'gte:0'], 'area_max' => ['nullable', 'numeric', 'gte:area_min'],
             'price_min' => ['nullable', 'numeric', 'gte:0'], 'price_max' => ['nullable', 'numeric', 'gte:price_min'],
+            'sale_price_min' => ['nullable', 'numeric', 'gte:0'],
+            'sale_price_max' => ['nullable', 'numeric', 'gte:sale_price_min'],
+            'deposit_min' => ['nullable', 'numeric', 'gte:0'],
+            'deposit_max' => ['nullable', 'numeric', 'gte:deposit_min'],
+            'rent_min' => ['nullable', 'numeric', 'gte:0'],
+            'rent_max' => ['nullable', 'numeric', 'gte:rent_min'],
             'bedrooms_min' => ['nullable', 'integer', 'between:0,255'],
+            'parking_min' => ['nullable', 'integer', 'between:0,255'],
+            'delivery_status' => ['nullable', 'string'], 'building_type' => ['nullable', 'string'],
+            'cabinet_type' => ['nullable', 'string'], 'heating_type' => ['nullable', 'string'],
+            'cooling_type' => ['nullable', 'string'], 'flooring_type' => ['nullable', 'string'],
+            'renovation_status' => ['nullable', 'string'], 'building_orientation' => ['nullable', 'string'],
+            'deed_type' => ['nullable', 'string'],
+            'has_storage_room' => ['nullable', 'boolean'], 'has_elevator' => ['nullable', 'boolean'],
+            'has_balcony' => ['nullable', 'boolean'], 'has_master_bathroom' => ['nullable', 'boolean'],
+            'has_loan' => ['nullable', 'boolean'], 'is_exchangeable' => ['nullable', 'boolean'],
+            'has_pool' => ['nullable', 'boolean'], 'has_jacuzzi' => ['nullable', 'boolean'],
+            'has_sauna' => ['nullable', 'boolean'], 'has_water' => ['nullable', 'boolean'],
+            'has_electricity' => ['nullable', 'boolean'], 'has_gas' => ['nullable', 'boolean'],
+            'can_aggregate' => ['nullable', 'boolean'],
             'order' => ['nullable', 'in:newest,oldest'],
             'per_page' => ['nullable', 'integer', 'between:1,100'],
         ]);
@@ -43,10 +62,13 @@ final class PropertyController extends Controller
             'images' => static fn ($images) => $images->orderBy('sort_order'),
         ]);
 
-        foreach (['status', 'property_type', 'transaction_type', 'city'] as $field) {
+        foreach (['status', 'property_type', 'transaction_type'] as $field) {
             if (isset($validated[$field])) {
                 $query->where($field, $validated[$field]);
             }
+        }
+        if (isset($validated['city'])) {
+            $query->where('city', 'like', '%'.addcslashes(trim($validated['city']), '%_\\').'%');
         }
         if (isset($validated['district'])) {
             $query->where('district', 'like', '%'.addcslashes(trim($validated['district']), '%_\\').'%');
@@ -63,8 +85,37 @@ final class PropertyController extends Controller
         if (isset($validated['price_max'])) {
             $query->whereRaw('COALESCE(sale_price, deposit_amount) <= ?', [$validated['price_max']]);
         }
+        foreach ([
+            'sale_price_min' => ['sale_price', '>='], 'sale_price_max' => ['sale_price', '<='],
+            'deposit_min' => ['deposit_amount', '>='], 'deposit_max' => ['deposit_amount', '<='],
+            'rent_min' => ['monthly_rent', '>='], 'rent_max' => ['monthly_rent', '<='],
+        ] as $filter => [$column, $operator]) {
+            if (isset($validated[$filter])) {
+                $query->where($column, $operator, $validated[$filter]);
+            }
+        }
         if (isset($validated['bedrooms_min'])) {
             $query->where('bedrooms', '>=', $validated['bedrooms_min']);
+        }
+        if (isset($validated['parking_min'])) {
+            $query->where('parking_spaces', '>=', $validated['parking_min']);
+        }
+        foreach ([
+            'delivery_status', 'building_type', 'cabinet_type', 'heating_type', 'cooling_type',
+            'flooring_type', 'renovation_status', 'building_orientation', 'deed_type',
+        ] as $field) {
+            if (isset($validated[$field])) {
+                $query->where($field, $validated[$field]);
+            }
+        }
+        foreach ([
+            'has_storage_room', 'has_elevator', 'has_balcony', 'has_master_bathroom', 'has_loan',
+            'is_exchangeable', 'has_pool', 'has_jacuzzi', 'has_sauna', 'has_water',
+            'has_electricity', 'has_gas', 'can_aggregate',
+        ] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $query->where($field, (bool) $validated[$field]);
+            }
         }
         if (isset($validated['q'])) {
             $escaped = addcslashes(trim($validated['q']), '%_\\');

@@ -21,12 +21,14 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
   String? _status;
   String? _type;
   String? _transaction;
+  String? _city;
   String? _district;
   String? _areaMin;
   String? _areaMax;
   String? _priceMin;
   String? _priceMax;
   String? _bedroomsMin;
+  Map<String, Object?> _featureFilters = const <String, Object?>{};
   String _order = 'newest';
 
   @override
@@ -190,150 +192,449 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
     await _apply();
   }
 
-  Future<void> _apply() => ref
-      .read(propertiesProvider.notifier)
-      .applyFilters(
-        query: _search.text,
-        status: _status,
-        type: _type,
-        transaction: _transaction,
-        district: _district,
-        areaMin: _areaMin,
-        areaMax: _areaMax,
-        priceMin: _priceMin,
-        priceMax: _priceMax,
-        bedroomsMin: _bedroomsMin,
-        order: _order,
-      );
+  Future<void> _apply() {
+    final features = Map<String, Object?>.from(_featureFilters);
+    if (_transaction == 'sale') {
+      features.remove('deposit_min');
+      features.remove('deposit_max');
+      features.remove('rent_min');
+      features.remove('rent_max');
+    } else {
+      features.remove('sale_price_min');
+      features.remove('sale_price_max');
+    }
+    return ref
+        .read(propertiesProvider.notifier)
+        .applyFilters(
+          query: _search.text,
+          status: _status,
+          type: _type,
+          transaction: _transaction,
+          district: _district,
+          areaMin: _areaMin,
+          areaMax: _areaMax,
+          priceMin: _transaction == 'sale' ? _priceMin : null,
+          priceMax: _transaction == 'sale' ? _priceMax : null,
+          bedroomsMin: _bedroomsMin,
+          features: <String, Object?>{
+            'city': _city,
+            if (_transaction == 'sale') ...<String, Object?>{
+              'sale_price_min': _priceMin,
+              'sale_price_max': _priceMax,
+            },
+            ...features,
+          },
+          order: _order,
+        );
+  }
 
   Future<void> _showFilters() async {
     var status = _status;
     var type = _type;
     var transaction = _transaction;
+    var step = 0;
     final district = TextEditingController(text: _district);
+    final city = TextEditingController(text: _city);
     final areaMin = TextEditingController(text: _areaMin);
     final areaMax = TextEditingController(text: _areaMax);
-    final priceMin = TextEditingController(text: _priceMin);
-    final priceMax = TextEditingController(text: _priceMax);
+    final salePriceMin = TextEditingController(text: _priceMin);
+    final salePriceMax = TextEditingController(text: _priceMax);
+    final depositMin = TextEditingController(
+      text: _featureFilters['deposit_min']?.toString(),
+    );
+    final depositMax = TextEditingController(
+      text: _featureFilters['deposit_max']?.toString(),
+    );
+    final rentMin = TextEditingController(
+      text: _featureFilters['rent_min']?.toString(),
+    );
+    final rentMax = TextEditingController(
+      text: _featureFilters['rent_max']?.toString(),
+    );
     final bedroomsMin = TextEditingController(text: _bedroomsMin);
-    final applied = await showModalBottomSheet<bool>(
+    final parkingMin = TextEditingController(
+      text: _featureFilters['parking_min']?.toString(),
+    );
+    var features = Map<String, Object?>.from(_featureFilters);
+    final applied = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              20,
-              20,
-              MediaQuery.viewInsetsOf(context).bottom + 20,
-            ),
-            child: Column(
+      useSafeArea: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final transactionOptions = type == 'land_old_building'
+              ? const <ChoiceItem>[ChoiceItem('sale', 'فروش')]
+              : transactionTypes;
+          if (transaction != null &&
+              !transactionOptions.any((item) => item.value == transaction)) {
+            transaction = 'sale';
+          }
+
+          Widget featureSwitch(String key, String label) => SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(label),
+            value: features[key] == true,
+            onChanged: (value) => setSheetState(() {
+              if (value) {
+                features[key] = true;
+              } else {
+                features.remove(key);
+              }
+            }),
+          );
+
+          Widget optionalChoice(
+            String key,
+            String label,
+            List<ChoiceItem> items,
+          ) => ChoiceField(
+            value: features[key] as String?,
+            label: label,
+            items: items,
+            includeEmpty: true,
+            onChanged: (value) => setSheetState(() {
+              if (value == null) {
+                features.remove(key);
+              } else {
+                features[key] = value;
+              }
+            }),
+          );
+
+          Widget stepBody() {
+            if (step == 0) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  ChoiceField(
+                    value: status,
+                    label: 'وضعیت ملک',
+                    items: propertyStatuses,
+                    includeEmpty: true,
+                    onChanged: (value) => setSheetState(() => status = value),
+                  ),
+                  const SizedBox(height: 10),
+                  ChoiceField(
+                    value: transaction,
+                    label: 'نوع معامله',
+                    items: transactionOptions,
+                    includeEmpty: true,
+                    onChanged: (value) => setSheetState(() {
+                      transaction = value;
+                      if (transaction != 'sale') {
+                        features.remove('has_loan');
+                        features.remove('is_exchangeable');
+                      }
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                  ChoiceField(
+                    value: type,
+                    label: 'نوع ملک',
+                    items: propertyTypes,
+                    includeEmpty: true,
+                    onChanged: (value) => setSheetState(() {
+                      type = value;
+                      if (type == 'land_old_building') transaction = 'sale';
+                      if (!<String>{
+                        'house',
+                        'villa',
+                        'house_villa',
+                      }.contains(type)) {
+                        features.remove('building_type');
+                      }
+                      if (type != 'industrial') {
+                        features.remove('has_water');
+                        features.remove('has_electricity');
+                        features.remove('has_gas');
+                      }
+                      if (type != 'land_old_building') {
+                        features.remove('can_aggregate');
+                      }
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: city,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(labelText: 'شهر'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: district,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(labelText: 'محله'),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      Expanded(child: _number(areaMin, 'حداقل متراژ')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _number(areaMax, 'حداکثر متراژ')),
+                    ],
+                  ),
+                ],
+              );
+            }
+            if (step == 1) {
+              if (transaction == 'rent') {
+                return Column(
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: _number(depositMin, 'حداقل ودیعه (تومان)'),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _number(depositMax, 'حداکثر ودیعه (تومان)'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: <Widget>[
+                        Expanded(child: _number(rentMin, 'حداقل اجاره ماهانه')),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _number(rentMax, 'حداکثر اجاره ماهانه'),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _number(salePriceMin, 'حداقل مبلغ فروش (تومان)'),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _number(salePriceMax, 'حداکثر مبلغ فروش (تومان)'),
+                  ),
+                ],
+              );
+            }
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text(
-                  'فیلتر املاک',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                ChoiceField(
-                  value: status,
-                  label: 'وضعیت',
-                  items: propertyStatuses,
-                  onChanged: (v) => setSheetState(() => status = v),
-                ),
-                const SizedBox(height: 10),
-                ChoiceField(
-                  value: type,
-                  label: 'نوع ملک',
-                  items: propertyTypes,
-                  onChanged: (v) => setSheetState(() => type = v),
-                ),
-                const SizedBox(height: 10),
-                ChoiceField(
-                  value: transaction,
-                  label: 'نوع معامله',
-                  items: transactionTypes,
-                  onChanged: (v) => setSheetState(() => transaction = v),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: district,
-                  decoration: const InputDecoration(labelText: 'محله'),
-                ),
-                const SizedBox(height: 10),
                 Row(
                   children: <Widget>[
-                    Expanded(child: _number(areaMin, 'متراژ از')),
+                    Expanded(child: _number(bedroomsMin, 'حداقل تعداد اتاق')),
                     const SizedBox(width: 8),
-                    Expanded(child: _number(areaMax, 'متراژ تا')),
+                    Expanded(child: _number(parkingMin, 'حداقل پارکینگ')),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: <Widget>[
-                    Expanded(child: _number(priceMin, 'مبلغ از (تومان)')),
-                    const SizedBox(width: 8),
-                    Expanded(child: _number(priceMax, 'مبلغ تا (تومان)')),
-                  ],
+                featureSwitch('has_storage_room', 'انباری'),
+                featureSwitch('has_elevator', 'آسانسور'),
+                featureSwitch('has_balcony', 'بالکن'),
+                featureSwitch('has_master_bathroom', 'سرویس مستر'),
+                if (transaction == 'sale') ...<Widget>[
+                  featureSwitch('has_loan', 'وام'),
+                  featureSwitch('is_exchangeable', 'قابل معاوضه'),
+                ],
+                featureSwitch('has_pool', 'استخر'),
+                featureSwitch('has_jacuzzi', 'جکوزی'),
+                featureSwitch('has_sauna', 'سونا'),
+                if (type == 'industrial') ...<Widget>[
+                  featureSwitch('has_water', 'آب'),
+                  featureSwitch('has_electricity', 'برق'),
+                  featureSwitch('has_gas', 'گاز'),
+                ],
+                if (type == 'land_old_building')
+                  featureSwitch('can_aggregate', 'قابلیت تجمیع'),
+                const Divider(height: 24),
+                optionalChoice(
+                  'delivery_status',
+                  'وضعیت تخلیه',
+                  transaction == 'rent'
+                      ? rentalDeliveryStatuses
+                      : saleDeliveryStatuses,
+                ),
+                if (<String>{
+                  'house',
+                  'villa',
+                  'house_villa',
+                }.contains(type)) ...<Widget>[
+                  const SizedBox(height: 10),
+                  optionalChoice('building_type', 'نوع بنا', buildingTypes),
+                ],
+                const SizedBox(height: 10),
+                optionalChoice('deed_type', 'نوع سند', deedTypes),
+                const SizedBox(height: 10),
+                optionalChoice('cabinet_type', 'نوع کابینت', cabinetTypes),
+                const SizedBox(height: 10),
+                optionalChoice('heating_type', 'نوع گرمایش', heatingTypes),
+                const SizedBox(height: 10),
+                optionalChoice('cooling_type', 'نوع سرمایش', coolingTypes),
+                const SizedBox(height: 10),
+                optionalChoice('flooring_type', 'نوع کف‌پوش', flooringTypes),
+                const SizedBox(height: 10),
+                optionalChoice(
+                  'renovation_status',
+                  'وضعیت بازسازی',
+                  renovationStatuses,
                 ),
                 const SizedBox(height: 10),
-                _number(bedroomsMin, 'حداقل اتاق'),
-                const SizedBox(height: 18),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          status = null;
-                          type = null;
-                          transaction = null;
-                          district.clear();
-                          areaMin.clear();
-                          areaMax.clear();
-                          priceMin.clear();
-                          priceMax.clear();
-                          bedroomsMin.clear();
-                          Navigator.pop(context, true);
-                        },
-                        child: const Text('پاک‌کردن'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('اعمال'),
-                      ),
-                    ),
-                  ],
+                optionalChoice(
+                  'building_orientation',
+                  'جهت ساختمان',
+                  buildingOrientations,
                 ),
               ],
+            );
+          }
+
+          Widget actionBar() => Row(
+            children: <Widget>[
+              if (step > 0)
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setSheetState(() => step--),
+                    child: const Text('مرحله قبل'),
+                  ),
+                )
+              else
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    child: const Text('انصراف'),
+                  ),
+                ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    if (step < 2) {
+                      setSheetState(() => step++);
+                    } else {
+                      Navigator.pop(sheetContext, 'apply');
+                    }
+                  },
+                  child: Tooltip(
+                    message: step < 2 ? 'رفتن به مرحله بعد' : 'اعمال فیلترها',
+                    child: Text(step < 2 ? 'مرحله بعد' : 'اعمال فیلتر'),
+                  ),
+                ),
+              ),
+            ],
+          );
+
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * .86,
+              ),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  12,
+                  20,
+                  MediaQuery.viewInsetsOf(context).bottom + 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            'فیلتر ملک | مرحله ${step + 1} از ۳',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(sheetContext, 'apply'),
+                          child: const Text('اعمال'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(sheetContext, 'clear'),
+                          child: const Text('پاک‌کردن همه'),
+                        ),
+                      ],
+                    ),
+                    LinearProgressIndicator(value: (step + 1) / 3),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: MediaQuery.sizeOf(context).height * .52,
+                      child: SingleChildScrollView(child: stepBody()),
+                    ),
+                    const SizedBox(height: 12),
+                    actionBar(),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
-    if (applied == true) {
+    if (applied == 'clear') {
+      await _clearFilters();
+    } else if (applied == 'apply') {
       setState(() {
         _status = status;
         _type = type;
         _transaction = transaction;
+        _city = _nullable(city.text);
         _district = _nullable(district.text);
         _areaMin = _nullable(areaMin.text);
         _areaMax = _nullable(areaMax.text);
-        _priceMin = _nullable(priceMin.text);
-        _priceMax = _nullable(priceMax.text);
+        _priceMin = transaction == 'sale' ? _nullable(salePriceMin.text) : null;
+        _priceMax = transaction == 'sale' ? _nullable(salePriceMax.text) : null;
         _bedroomsMin = _nullable(bedroomsMin.text);
+        if (transaction == 'rent') {
+          features['deposit_min'] = _nullable(depositMin.text);
+          features['deposit_max'] = _nullable(depositMax.text);
+          features['rent_min'] = _nullable(rentMin.text);
+          features['rent_max'] = _nullable(rentMax.text);
+        } else {
+          features.remove('deposit_min');
+          features.remove('deposit_max');
+          features.remove('rent_min');
+          features.remove('rent_max');
+        }
+        final parking = _nullable(parkingMin.text);
+        if (parking == null) {
+          features.remove('parking_min');
+        } else {
+          features['parking_min'] = parking;
+        }
+        features = Map<String, Object?>.fromEntries(
+          features.entries.where(
+            (entry) => entry.value != null && entry.value != '',
+          ),
+        );
+        _featureFilters = features;
       });
       await _apply();
     }
+    city.dispose();
     district.dispose();
     areaMin.dispose();
     areaMax.dispose();
-    priceMin.dispose();
-    priceMax.dispose();
+    salePriceMin.dispose();
+    salePriceMax.dispose();
+    depositMin.dispose();
+    depositMax.dispose();
+    rentMin.dispose();
+    rentMax.dispose();
     bedroomsMin.dispose();
+    parkingMin.dispose();
   }
 
   static TextField _number(TextEditingController controller, String label) =>
@@ -348,22 +649,28 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
       _status != null ||
       _type != null ||
       _transaction != null ||
+      _city != null ||
       _district != null ||
       _areaMin != null ||
       _areaMax != null ||
       _priceMin != null ||
       _priceMax != null ||
-      _bedroomsMin != null;
+      _bedroomsMin != null ||
+      _featureFilters.isNotEmpty;
 
   List<Widget> get _filterChips => <Widget>[
     if (_status != null) Chip(label: Text(labelOf(propertyStatuses, _status))),
     if (_type != null) Chip(label: Text(labelOf(propertyTypes, _type))),
+    if (_transaction != null)
+      Chip(label: Text(labelOf(transactionTypes, _transaction))),
+    if (_city != null) Chip(label: Text('شهر: $_city')),
     if (_district != null) Chip(label: Text('محله: $_district')),
     if (_areaMin != null || _areaMax != null)
       const Chip(label: Text('محدوده متراژ')),
     if (_priceMin != null || _priceMax != null)
       const Chip(label: Text('محدوده مبلغ')),
     if (_bedroomsMin != null) const Chip(label: Text('حداقل اتاق')),
+    if (_featureFilters.isNotEmpty) const Chip(label: Text('ویژگی‌های ملک')),
   ];
 
   Future<void> _setOrder(String value) async {
@@ -378,12 +685,14 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
       _status = null;
       _type = null;
       _transaction = null;
+      _city = null;
       _district = null;
       _areaMin = null;
       _areaMax = null;
       _priceMin = null;
       _priceMax = null;
       _bedroomsMin = null;
+      _featureFilters = const <String, Object?>{};
     });
     await _apply();
   }
