@@ -6,6 +6,7 @@ namespace App\Application\Customer\Services;
 
 use App\Application\Customer\Contracts\CustomerRepositoryContract;
 use App\Application\Customer\Data\UpdateCustomerData;
+use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Shared\Services\AgentAssignmentValidator;
 use App\Application\Shared\Services\OptimisticLock;
 use App\Domain\Customer\Enums\CustomerHistoryAction;
@@ -28,11 +29,12 @@ final readonly class UpdateCustomerService
         private OptimisticLock $optimisticLock,
         private TenantContext $tenant,
         private CustomerHistoryWriter $history,
+        private MatchingRebuildDispatcher $matching,
     ) {}
 
     public function execute(User $actor, Customer $customer, UpdateCustomerData $data): Customer
     {
-        return DB::transaction(function () use ($actor, $customer, $data): Customer {
+        $updated = DB::transaction(function () use ($actor, $customer, $data): Customer {
             $locked = $this->customers->lock((int) $customer->getKey());
             if ($data->expectedVersion !== null) {
                 $this->optimisticLock->assertVersion($locked, $data->expectedVersion);
@@ -72,6 +74,7 @@ final readonly class UpdateCustomerService
             $attributes['status'] = $toStatus;
             $before = $locked->getAttributes();
             $locked->fill($attributes);
+            $locked->matching_eligible_at = now();
             $locked->lock_version = (int) $locked->lock_version + 1;
 
             $locked = $this->customers->save($locked);
@@ -93,6 +96,10 @@ final readonly class UpdateCustomerService
 
             return $locked;
         });
+
+        $this->matching->dispatchForAgency((int) $updated->agency_id);
+
+        return $updated;
     }
 
     private function validateTransition(

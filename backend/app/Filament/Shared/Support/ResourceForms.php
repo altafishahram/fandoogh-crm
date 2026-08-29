@@ -321,8 +321,8 @@ final class ResourceForms
                             Toggle::make('has_electricity')->label('برق'),
                             Toggle::make('has_gas')->label('گاز'),
                             TextInput::make('telephone_line_count')->label('تعداد خط تلفن'),
-                            TextInput::make('land_area')->label('متراژ زمین'),
-                            TextInput::make('building_area')->label('متراژ بنا'),
+                            TextInput::make('land_area')->label('متراژ زمین')->required()->numeric()->minValue(0.01),
+                            TextInput::make('building_area')->label('متراژ بنا')->required()->numeric()->minValue(0.01),
                         ])->columns(2),
                     Section::make('مشخصات زمین')->visible(fn (Get $get): bool => $get('property_type') === PropertyType::LandOldBuilding->value)
                         ->schema([
@@ -422,7 +422,8 @@ final class ResourceForms
                                 $set('has_master_bathroom', false);
                             }
                             if ($state !== PropertyType::Industrial->value) {
-                                foreach (['structure_type', 'telephone_line_count', 'land_area', 'building_area'] as $field) {
+                                foreach (['structure_type', 'telephone_line_count', 'land_area', 'building_area',
+                                    'land_area_min', 'land_area_max', 'building_area_min', 'building_area_max'] as $field) {
                                     $set($field, null);
                                 }
                                 foreach (['has_water', 'has_electricity', 'has_gas'] as $field) {
@@ -436,8 +437,14 @@ final class ResourceForms
                         ->visible(fn (Get $get): bool => self::isHouseVilla($get('desired_property_type'))),
                     TextInput::make('desired_city')->label('شهر موردنظر')->maxLength(100),
                     TextInput::make('desired_district')->label('محله موردنظر')->maxLength(100),
-                    TextInput::make('min_area_sqm')->label('حداقل متراژ')->required()->numeric()->minValue(0.01),
-                    TextInput::make('max_area_sqm')->label('حداکثر متراژ')->required()->numeric()->minValue(0.01),
+                    TextInput::make('min_area_sqm')->label('حداقل متراژ')->required(fn (Get $get): bool => $get('desired_property_type') !== PropertyType::Industrial->value)
+                        ->hidden(fn (Get $get): bool => $get('desired_property_type') === PropertyType::Industrial->value)
+                        ->dehydrated(fn (Get $get): bool => $get('desired_property_type') !== PropertyType::Industrial->value)
+                        ->numeric()->minValue(0.01),
+                    TextInput::make('max_area_sqm')->label('حداکثر متراژ')->required(fn (Get $get): bool => $get('desired_property_type') !== PropertyType::Industrial->value)
+                        ->hidden(fn (Get $get): bool => $get('desired_property_type') === PropertyType::Industrial->value)
+                        ->dehydrated(fn (Get $get): bool => $get('desired_property_type') !== PropertyType::Industrial->value)
+                        ->numeric()->minValue(0.01)->gte('min_area_sqm'),
                     TextInput::make('min_bedrooms')->label('حداقل تعداد اتاق')->numeric()->minValue(0)
                         ->visible(fn (Get $get): bool => $get('intent') !== CustomerIntent::Rent->value)
                         ->dehydrated(fn (Get $get): bool => $get('intent') !== CustomerIntent::Rent->value),
@@ -463,8 +470,12 @@ final class ResourceForms
                             Toggle::make('has_electricity')->label('برق'),
                             Toggle::make('has_gas')->label('گاز'),
                             TextInput::make('telephone_line_count')->label('تعداد خط تلفن'),
-                            TextInput::make('land_area')->label('متراژ زمین'),
-                            TextInput::make('building_area')->label('متراژ بنا'),
+                            TextInput::make('land_area_min')->label('حداقل متراژ زمین')->required()->numeric()->minValue(0.01),
+                            TextInput::make('land_area_max')->label('حداکثر متراژ زمین')->required()->numeric()->minValue(0.01)
+                                ->gte('land_area_min'),
+                            TextInput::make('building_area_min')->label('حداقل متراژ بنا')->required()->numeric()->minValue(0.01),
+                            TextInput::make('building_area_max')->label('حداکثر متراژ بنا')->required()->numeric()->minValue(0.01)
+                                ->gte('building_area_min'),
                         ])->columns(2),
                     CheckboxList::make('toilet_types')->label('نوع سرویس')
                         ->options(PropertyFeatureOptions::TOILET_TYPES)->columns(2)->columnSpanFull(),

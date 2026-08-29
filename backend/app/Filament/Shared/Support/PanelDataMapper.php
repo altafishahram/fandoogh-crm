@@ -231,6 +231,8 @@ final class PanelDataMapper
             $hasParking,
             (bool) ($data['has_storage_room'] ?? false),
             $isRent && (bool) ($data['owner_resides'] ?? false),
+            self::string($data, 'land_area_min'), self::string($data, 'land_area_max'),
+            self::string($data, 'building_area_min'), self::string($data, 'building_area_max'),
         );
     }
 
@@ -249,6 +251,7 @@ final class PanelDataMapper
             'is_exchangeable', 'has_pool', 'has_jacuzzi', 'has_sauna',
             'building_type', 'structure_type', 'has_water', 'has_electricity', 'has_gas',
             'telephone_line_count', 'land_area', 'building_area', 'min_parking_spaces',
+            'land_area_min', 'land_area_max', 'building_area_min', 'building_area_max',
             'has_parking', 'has_storage_room', 'owner_resides', 'has_elevator', 'has_balcony',
         ];
         $attributes = array_intersect_key($data, array_flip($allowed));
@@ -257,6 +260,11 @@ final class PanelDataMapper
         $attributes['email'] = null;
         $attributes['preferred_contact_method'] = PreferredContactMethod::Phone;
         $attributes['preferred_property_types'] = [(string) $data['desired_property_type']];
+        if (($data['desired_property_type'] ?? null) !== PropertyType::Industrial->value) {
+            foreach (['land_area_min', 'land_area_max', 'building_area_min', 'building_area_max'] as $field) {
+                $attributes[$field] = null;
+            }
+        }
         if (($data['desired_property_type'] ?? null) === PropertyType::LandOldBuilding->value) {
             $attributes['intent'] = CustomerIntent::Buy;
             foreach (['rental_deposit_min', 'rental_deposit_max', 'rental_rent_min', 'rental_rent_max'] as $field) {

@@ -18,6 +18,7 @@ use App\Infrastructure\Persistence\EloquentUserIdentityRepository;
 use App\Models\Agency;
 use App\Models\Customer;
 use App\Models\CustomerNote;
+use App\Models\MatchNotification;
 use App\Models\Owner;
 use App\Models\Property;
 use App\Models\PropertyNote;
@@ -26,6 +27,7 @@ use App\Models\User;
 use App\Policies\AgencyPolicy;
 use App\Policies\CustomerNotePolicy;
 use App\Policies\CustomerPolicy;
+use App\Policies\MatchNotificationPolicy;
 use App\Policies\OwnerPolicy;
 use App\Policies\PropertyNotePolicy;
 use App\Policies\PropertyPolicy;
@@ -57,6 +59,7 @@ final class AppServiceProvider extends ServiceProvider
         Gate::policy(PropertyNote::class, PropertyNotePolicy::class);
         Gate::policy(Customer::class, CustomerPolicy::class);
         Gate::policy(CustomerNote::class, CustomerNotePolicy::class);
+        Gate::policy(MatchNotification::class, MatchNotificationPolicy::class);
         Gate::policy(SavedFilter::class, SavedFilterPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
 

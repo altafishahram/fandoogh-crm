@@ -37,30 +37,55 @@ final class _ReportPageState extends ConsumerState<ReportPage> {
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: PersianDateField(
-                  label: 'از تاریخ',
-                  value: _from,
-                  onChanged: (value) => setState(() => _from = value),
-                ),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.date_range_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'بازه گزارش',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: PersianDateField(
+                          label: 'از تاریخ',
+                          value: _from,
+                          onChanged: (value) => setState(() => _from = value),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: PersianDateField(
+                          label: 'تا تاریخ',
+                          value: _to,
+                          onChanged: (value) => setState(() => _to = value),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  FilledButton.icon(
+                    onPressed: _load,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('اجرای گزارش'),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: PersianDateField(
-                  label: 'تا تاریخ',
-                  value: _to,
-                  onChanged: (value) => setState(() => _to = value),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                tooltip: 'اجرای گزارش',
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-            ],
+            ),
           ),
         ),
         Expanded(child: _body()),
@@ -89,6 +114,7 @@ final class _ReportPageState extends ConsumerState<ReportPage> {
                   label: 'املاک واگذارشده',
                   value: '${data['assigned_properties'] ?? 0}',
                   icon: Icons.apartment_outlined,
+                  color: const Color(0xFF0F766E),
                 ),
               ),
               const SizedBox(width: 8),
@@ -97,6 +123,7 @@ final class _ReportPageState extends ConsumerState<ReportPage> {
                   label: 'مشتریان ایجادشده',
                   value: '${data['customers_created'] ?? 0}',
                   icon: Icons.person_add_alt,
+                  color: const Color(0xFF7557B7),
                 ),
               ),
             ],
@@ -154,17 +181,27 @@ final class _MetricCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
+    required this.color,
   });
   final String label;
   final String value;
   final IconData icon;
+  final Color color;
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: <Widget>[
-          Icon(icon, size: 34, color: Theme.of(context).colorScheme.primary),
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .11),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(icon, size: 26, color: color),
+          ),
           const SizedBox(height: 8),
           Text(value, style: Theme.of(context).textTheme.headlineSmall),
           Text(label, textAlign: TextAlign.center),

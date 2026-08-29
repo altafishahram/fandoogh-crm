@@ -130,6 +130,10 @@ abstract class CustomerResourceBase extends Resource
                 TextEntry::make('telephone_line_count')->label('تعداد خط تلفن')->placeholder('—'),
                 TextEntry::make('land_area')->label('متراژ زمین')->placeholder('—'),
                 TextEntry::make('building_area')->label('متراژ بنا')->placeholder('—'),
+                TextEntry::make('land_area_min')->label('حداقل متراژ زمین')->numeric()->placeholder('—'),
+                TextEntry::make('land_area_max')->label('حداکثر متراژ زمین')->numeric()->placeholder('—'),
+                TextEntry::make('building_area_min')->label('حداقل متراژ بنا')->numeric()->placeholder('—'),
+                TextEntry::make('building_area_max')->label('حداکثر متراژ بنا')->numeric()->placeholder('—'),
             ])->columns(4),
             Section::make('توضیحات')->schema([
                 TextEntry::make('description')->label('توضیحات مشتری')->placeholder('توضیحی ثبت نشده است.'),

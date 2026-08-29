@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Customer\Services;
 
+use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Shared\Services\AgentAssignmentValidator;
 use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Shared\Exceptions\DomainConflictException;
@@ -18,6 +19,7 @@ final readonly class RestoreCustomerService
         private AgentAssignmentValidator $agents,
         private CustomerInvariantValidator $validator,
         private TenantContext $tenant,
+        private MatchingRebuildDispatcher $matching,
     ) {}
 
     public function execute(Customer $customer): Customer
@@ -37,6 +39,10 @@ final readonly class RestoreCustomerService
         }
 
         $customer->restore();
+        $customer->matching_eligible_at = now();
+        $customer->save();
+
+        $this->matching->dispatchForAgency((int) $customer->agency_id);
 
         return $customer->refresh();
     }

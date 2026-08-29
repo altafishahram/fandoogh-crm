@@ -15,8 +15,8 @@ final class PanelBranding
         return $panel
             ->brandName("ملک بان · {$section}")
             ->colors([
-                'primary' => Color::hex('#6F9A73'),
-                'gray' => Color::hex('#6B756C'),
+                'primary' => Color::hex('#0F766E'),
+                'gray' => Color::hex('#68817E'),
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
@@ -25,6 +25,10 @@ final class PanelBranding
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_FOOTER,
                 static fn () => view('filament.shared.brand-credit'),
+            )
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                static fn () => view('filament.shared.match-notification-host'),
             )
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,

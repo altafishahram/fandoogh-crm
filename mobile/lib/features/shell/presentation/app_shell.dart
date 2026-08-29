@@ -1,13 +1,25 @@
+import 'dart:async';
+
 import 'package:fandoogh_crm/core/auth/auth_controller.dart';
+import 'package:fandoogh_crm/core/localization/persian_date.dart';
 import 'package:fandoogh_crm/core/widgets/sync_banner.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_notification_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-final class AppShell extends ConsumerWidget {
+final class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, super.key});
 
   final Widget child;
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+final class _AppShellState extends ConsumerState<AppShell>
+    with WidgetsBindingObserver {
+  Timer? _notificationTimer;
 
   static const _allDestinations = <_Destination>[
     _Destination(
@@ -41,8 +53,70 @@ final class AppShell extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _refreshNotifications(),
+    );
+    _notificationTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _refreshNotifications(),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshNotifications();
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _refreshNotifications() {
+    if (!mounted) return;
+    ref.invalidate(matchNotificationUnreadCountProvider);
+    ref.invalidate(matchNotificationsProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final unreadState = ref.watch(matchNotificationUnreadCountProvider);
+    final unreadCount = unreadState.value ?? 0;
+    ref.listen(matchNotificationUnreadCountProvider, (previous, next) {
+      final before = previous?.value;
+      final current = next.value;
+      if (before == null || current == null || current <= before || !mounted) {
+        return;
+      }
+      final added = current - before;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Row(
+              children: <Widget>[
+                const Icon(Icons.notifications_active_rounded),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${persianDigits(added)} اعلان تطبیق جدید دریافت شد.',
+                  ),
+                ),
+              ],
+            ),
+            action: SnackBarAction(
+              label: 'مشاهده',
+              onPressed: () => context.push('/match-notifications'),
+            ),
+          ),
+        );
+    });
     final destinations = _allDestinations
         .where((item) {
           if (item.report) {
@@ -57,7 +131,7 @@ final class AppShell extends ConsumerWidget {
     final selected = index < 0 ? 0 : index;
 
     return Scaffold(
-      body: child,
+      body: widget.child,
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -69,8 +143,26 @@ final class AppShell extends ConsumerWidget {
             destinations: destinations
                 .map(
                   (item) => NavigationDestination(
-                    icon: Icon(item.icon),
-                    selectedIcon: Icon(item.selectedIcon),
+                    icon: item.path == '/dashboard' && unreadCount > 0
+                        ? Badge(
+                            label: Text(
+                              unreadCount > 99
+                                  ? '۹۹+'
+                                  : persianDigits(unreadCount),
+                            ),
+                            child: Icon(item.icon),
+                          )
+                        : Icon(item.icon),
+                    selectedIcon: item.path == '/dashboard' && unreadCount > 0
+                        ? Badge(
+                            label: Text(
+                              unreadCount > 99
+                                  ? '۹۹+'
+                                  : persianDigits(unreadCount),
+                            ),
+                            child: Icon(item.selectedIcon),
+                          )
+                        : Icon(item.selectedIcon),
                     label: item.label,
                   ),
                 )

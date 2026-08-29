@@ -66,6 +66,10 @@ final readonly class CreateCustomerData
         public bool $hasParking = false,
         public bool $hasStorageRoom = false,
         public bool $ownerResides = false,
+        public ?string $landAreaMin = null,
+        public ?string $landAreaMax = null,
+        public ?string $buildingAreaMin = null,
+        public ?string $buildingAreaMax = null,
     ) {}
 
     /** @return array<string, mixed> */
@@ -113,6 +117,10 @@ final readonly class CreateCustomerData
             'has_parking' => $this->hasParking,
             'has_storage_room' => $this->hasStorageRoom,
             'owner_resides' => $this->ownerResides,
+            'land_area_min' => $this->landAreaMin,
+            'land_area_max' => $this->landAreaMax,
+            'building_area_min' => $this->buildingAreaMin,
+            'building_area_max' => $this->buildingAreaMax,
             'has_elevator' => $this->hasElevator,
             'has_balcony' => $this->hasBalcony,
             'description' => $this->description,

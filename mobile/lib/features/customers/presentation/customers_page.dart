@@ -1,5 +1,6 @@
-import 'package:fandoogh_crm/core/localization/persian_date.dart';
+import 'package:fandoogh_crm/core/localization/persian_number.dart';
 import 'package:fandoogh_crm/core/network/paged_result.dart';
+import 'package:fandoogh_crm/core/phone/phone_launcher.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/features/customers/data/customer_repository.dart';
@@ -45,107 +46,314 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
   Widget build(BuildContext context) {
     final value = ref.watch(customersProvider);
     final controller = ref.read(customersProvider.notifier);
+    final customers = value.asData?.value.items ?? const <CustomerRecord>[];
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('مشتریان'),
-        actions: <Widget>[
-          PopupMenuButton<String>(
-            tooltip: 'مرتب‌سازی',
-            initialValue: _order,
-            onSelected: _setOrder,
-            icon: const Icon(Icons.sort_rounded),
-            itemBuilder: (_) => const <PopupMenuEntry<String>>[
-              PopupMenuItem(value: 'newest', child: Text('جدیدترین')),
-              PopupMenuItem(value: 'oldest', child: Text('قدیمی‌ترین')),
-            ],
-          ),
-          IconButton(
-            tooltip: 'فیلترها',
-            onPressed: _showFilters,
-            icon: Badge(
-              isLabelVisible: _hasFilters,
-              child: const Icon(Icons.tune_rounded),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              child: _pageHeader(
+                context,
+                onCreate: () async {
+                  final created = await context.push<bool>('/customers/new');
+                  if (created == true) controller.refresh();
+                },
+              ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'new-customer',
-        onPressed: () async {
-          final created = await context.push<bool>('/customers/new');
-          if (created == true) {
-            controller.refresh();
-          }
-        },
-        icon: const Icon(Icons.person_add_alt_1),
-        label: const Text('مشتری جدید'),
-      ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: SearchBar(
-              controller: _search,
-              hintText: 'نام یا شماره همراه مشتری',
-              leading: const Icon(Icons.search_rounded),
-              trailing: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: SearchBar(
+                        controller: _search,
+                        hintText: 'شماره یا نام مشتری',
+                        leading: const Icon(Icons.search_rounded),
+                        trailing: <Widget>[
                 if (_search.text.isNotEmpty)
                   IconButton(
                     tooltip: 'پاک‌کردن',
-                    onPressed: _clearFilters,
+                    onPressed: () {
+                      setState(_search.clear);
+                      _apply();
+                    },
                     icon: const Icon(Icons.close_rounded),
                   ),
-              ],
-              onChanged: (_) => setState(() {}),
-              onSubmitted: (_) => _apply(),
-            ),
-          ),
-          if (_hasFilters)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  if (_status != null)
-                    Chip(label: Text(labelOf(customerStatuses, _status))),
-                  if (_intent != null)
-                    Chip(label: Text(labelOf(customerIntents, _intent))),
-                  if (_propertyType != null)
-                    Chip(label: Text(labelOf(propertyTypes, _propertyType))),
-                  if (_city != null) Chip(label: Text('شهر: $_city')),
-                  if (_district != null) Chip(label: Text('محله: $_district')),
-                  if (_areaMin != null || _areaMax != null)
-                    const Chip(label: Text('محدوده متراژ')),
-                  if (_budgetMin != null || _budgetMax != null)
-                    const Chip(label: Text('محدوده بودجه')),
-                  if (_requirementFilters.isNotEmpty)
-                    const Chip(label: Text('نیازمندی‌ها')),
-                  ActionChip(
-                    avatar: const Icon(Icons.filter_alt_off_outlined, size: 18),
-                    label: const Text('حذف فیلترها'),
-                    onPressed: _clearFilters,
+                        ],
+                        onChanged: (_) => setState(() {}),
+                        onSubmitted: (_) => _apply(),
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  _filterButton(context),
                 ],
               ),
             ),
-          Expanded(
-            child: value.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) =>
-                  ErrorState(error: error, onRetry: controller.refresh),
-              data: (page) => _CustomerList(
-                page: page,
-                onRefresh: controller.refresh,
-                onMore: controller.loadMore,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
+              child: _summaryCards(customers),
+            ),
+            if (_hasFilters)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    if (_status != null)
+                      Chip(label: Text(labelOf(customerStatuses, _status))),
+                    if (_intent != null)
+                      Chip(label: Text(labelOf(customerIntents, _intent))),
+                    if (_propertyType != null)
+                      Chip(label: Text(labelOf(propertyTypes, _propertyType))),
+                    if (_city != null) Chip(label: Text('شهر: $_city')),
+                    if (_district != null)
+                      Chip(label: Text('محله: $_district')),
+                    if (_areaMin != null || _areaMax != null)
+                      const Chip(label: Text('محدوده متراژ')),
+                    if (_budgetMin != null || _budgetMax != null)
+                      const Chip(label: Text('محدوده بودجه')),
+                    if (_requirementFilters.isNotEmpty)
+                      const Chip(label: Text('نیازمندی‌ها')),
+                    ActionChip(
+                      avatar: const Icon(
+                        Icons.filter_alt_off_outlined,
+                        size: 18,
+                      ),
+                      label: const Text('حذف فیلترها'),
+                      onPressed: _clearFilters,
+                    ),
+                  ],
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: _listToolbar(context),
+            ),
+            Expanded(
+              child: value.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) =>
+                    ErrorState(error: error, onRetry: controller.refresh),
+                data: (page) => _CustomerList(
+                  page: page,
+                  onRefresh: controller.refresh,
+                  onMore: controller.loadMore,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  Widget _pageHeader(BuildContext context, {required VoidCallback onCreate}) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'مشتری‌ها',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'تازه‌ها و پیگیری‌ها در یک نگاه',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Tooltip(
+          message: 'مشتری جدید',
+          child: Semantics(
+            button: true,
+            label: 'ثبت مشتری جدید',
+            child: Material(
+              color: colors.primary,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: onCreate,
+                borderRadius: BorderRadius.circular(16),
+                child: const SizedBox.square(
+                  dimension: 48,
+                  child: Icon(
+                    Icons.person_add_alt_1_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _filterButton(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: 'فیلترها',
+      child: IconButton(
+        onPressed: _showFilters,
+        style: IconButton.styleFrom(
+          minimumSize: const Size.square(48),
+          maximumSize: const Size.square(48),
+          backgroundColor: colors.surface,
+          foregroundColor: colors.onSurfaceVariant,
+          side: BorderSide(color: colors.outlineVariant),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        icon: Badge(
+          isLabelVisible: _hasFilters,
+          child: const Icon(Icons.tune_rounded),
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryCards(List<CustomerRecord> customers) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: _summaryCard(
+            value: _countStatus(customers, 'active'),
+            label: 'فعال',
+            color: const Color(0xFFBFEFE8),
+            foreground: const Color(0xFF115E59),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _summaryCard(
+            value: _countStatus(customers, 'finalized'),
+            label: 'نهایی‌شده',
+            color: const Color(0xFFE8DEFF),
+            foreground: const Color(0xFF7557B7),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _summaryCard(
+            value: _countStatus(customers, 'withdrawn'),
+            label: 'انصراف‌داده',
+            color: const Color(0xFFFFEFD4),
+            foreground: const Color(0xFFB45309),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryCard({
+    required int value,
+    required String label,
+    required Color color,
+    required Color foreground,
+  }) => Container(
+    constraints: const BoxConstraints(minHeight: 76),
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(17),
+      border: Border.all(color: foreground.withValues(alpha: .14)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          formatPersianDigits(value),
+          style: TextStyle(
+            color: foreground,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: foreground,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _listToolbar(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            'مشتری‌های اخیر',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'مرتب‌سازی',
+          initialValue: _order,
+          onSelected: _setOrder,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _order == 'newest' ? 'جدیدترین' : 'قدیمی‌ترین',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.swap_vert_rounded,
+                  size: 19,
+                  color: colors.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+          itemBuilder: (_) => const <PopupMenuEntry<String>>[
+            PopupMenuItem(value: 'newest', child: Text('جدیدترین')),
+            PopupMenuItem(value: 'oldest', child: Text('قدیمی‌ترین')),
+          ],
+        ),
+      ],
+    );
+  }
+
+  static int _countStatus(List<CustomerRecord> customers, String status) =>
+      customers.where((customer) => customer.status == status).length;
 
   Future<void> _apply() {
     final requirements = Map<String, Object?>.from(_requirementFilters);
@@ -273,6 +481,7 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
                       intent = value;
                       if (intent == 'rent') {
                         for (final key in <String>[
+                          'deed_type',
                           'has_loan',
                           'is_exchangeable',
                           'has_pool',
@@ -280,6 +489,9 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
                           'has_sauna',
                         ]) {
                           requirements.remove(key);
+                        }
+                        if (propertyType != 'apartment') {
+                          requirements.remove('has_master_bathroom');
                         }
                       } else {
                         for (final key in <String>[
@@ -302,6 +514,9 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
                     onChanged: (value) => setSheetState(() {
                       propertyType = value;
                       if (propertyType == 'land_old_building') intent = 'buy';
+                      if (intent == 'rent' && propertyType != 'apartment') {
+                        requirements.remove('has_master_bathroom');
+                      }
                       if (!<String>{
                         'house',
                         'villa',
@@ -405,7 +620,8 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
                   requirementSwitch('has_jacuzzi', 'جکوزی'),
                   requirementSwitch('has_sauna', 'سونا'),
                 ],
-                requirementSwitch('has_master_bathroom', 'سرویس مستر'),
+                if (intent != 'rent' || propertyType == 'apartment')
+                  requirementSwitch('has_master_bathroom', 'سرویس مستر'),
                 if (propertyType == 'industrial') ...<Widget>[
                   requirementSwitch('has_water', 'آب'),
                   requirementSwitch('has_electricity', 'برق'),
@@ -419,7 +635,8 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
                 }.contains(propertyType))
                   optionalChoice('building_type', 'نوع بنا', buildingTypes),
                 const SizedBox(height: 10),
-                optionalChoice('deed_type', 'نوع سند', deedTypes),
+                if (intent != 'rent')
+                  optionalChoice('deed_type', 'نوع سند', deedTypes),
                 const SizedBox(height: 10),
                 optionalChoice('cabinet_type', 'نوع کابینت', cabinetTypes),
                 const SizedBox(height: 10),
@@ -682,33 +899,266 @@ final class _CustomerList extends StatelessWidget {
             );
           }
           final item = page.items[index];
-          return Card(
-            child: ListTile(
-              minVerticalPadding: 14,
-              leading: CircleAvatar(
-                child: Text(
-                  item.name.isEmpty ? '؟' : item.name.characters.first,
-                ),
-              ),
-              title: Row(
-                children: <Widget>[
-                  Expanded(child: Text(item.name)),
-                  if (item.pendingSync)
-                    const Icon(Icons.cloud_upload_outlined, size: 18),
-                ],
-              ),
-              subtitle: Text(
-                '${item.mobile}\n${labelOf(customerIntents, item.intent)} • ${labelOf(customerStatuses, item.status)}\n${PersianDate.formatIso(item.createdAt)}',
-              ),
-              isThreeLine: true,
-              trailing: const Icon(Icons.chevron_left_rounded),
-              onTap: item.id < 0
-                  ? null
-                  : () => context.push('/customers/${item.id}'),
-            ),
+          return _CustomerCard(
+            customer: item,
+            onTap: item.id < 0
+                ? null
+                : () => context.push('/customers/${item.id}'),
           );
         },
       ),
     );
+  }
+}
+
+final class _CustomerCard extends StatelessWidget {
+  const _CustomerCard({required this.customer, required this.onTap});
+
+  final CustomerRecord customer;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final type = '${customer.data['desired_property_type'] ?? ''}';
+    final district = '${customer.data['desired_district'] ?? ''}'.trim();
+    final need = <String>[
+      labelOf(customerIntents, customer.intent),
+      if (type.isNotEmpty) labelOf(propertyTypes, type),
+    ].join(' · ');
+    final avatarColor = customer.intent == 'rent'
+        ? const Color(0xFFE8DEFF)
+        : const Color(0xFFFFEFD4);
+    final avatarForeground = customer.intent == 'rent'
+        ? const Color(0xFF7557B7)
+        : const Color(0xFFB45309);
+    final statusColor = customer.status == 'active'
+        ? const Color(0xFFBFEFE8)
+        : const Color(0xFFE8DEFF);
+    final statusForeground = customer.status == 'active'
+        ? const Color(0xFF115E59)
+        : const Color(0xFF7557B7);
+    final area = _areaRange(
+      customer.data['min_area_sqm'],
+      customer.data['max_area_sqm'],
+    );
+    final budget = _budgetLabel();
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: avatarColor,
+                      borderRadius: BorderRadius.circular(17),
+                    ),
+                    child: Text(
+                      _initials(customer.name),
+                      style: TextStyle(
+                        color: avatarForeground,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          customer.name.isEmpty ? 'بدون نام' : customer.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          need,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            labelOf(customerStatuses, customer.status),
+                            style: TextStyle(
+                              color: statusForeground,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.circle, size: 5, color: statusForeground),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 9),
+              Wrap(
+                alignment: WrapAlignment.start,
+                spacing: 8,
+                runSpacing: 6,
+                children: <Widget>[
+                  if (area != null) _infoPill('متراژ $area'),
+                  if (district.isNotEmpty) _infoPill('محله $district'),
+                ],
+              ),
+              if (budget != null) ...<Widget>[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: _infoPill(budget),
+                ),
+              ],
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 9),
+                child: Divider(height: 1),
+              ),
+              Row(
+                children: <Widget>[
+                  _callButton(context),
+                  const SizedBox(width: 8),
+                  _detailsButton(),
+                  const Spacer(),
+                  if (customer.pendingSync)
+                    Tooltip(
+                      message: 'در صف همگام‌سازی',
+                      child: Icon(
+                        Icons.cloud_upload_outlined,
+                        size: 18,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '؟';
+    if (parts.length == 1) return parts.first.characters.first;
+    return '${parts.first.characters.first}${parts.last.characters.first}';
+  }
+
+  Widget _infoPill(String label) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: const Color(0xFFC4E6BC),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Color(0xFF456746),
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    ),
+  );
+
+  Widget _callButton(BuildContext context) => IconButton(
+    tooltip: 'تماس با ${customer.name}',
+    onPressed: customer.mobile.isEmpty
+        ? null
+        : () => launchPhoneCall(context, customer.mobile),
+    style: IconButton.styleFrom(
+      minimumSize: const Size.square(40),
+      maximumSize: const Size.square(40),
+      backgroundColor: const Color(0xFFBFEFE8),
+      foregroundColor: const Color(0xFF115E59),
+      disabledBackgroundColor: Theme.of(
+        context,
+      ).colorScheme.surfaceContainerLow,
+      disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+    ),
+    icon: const Icon(Icons.phone_rounded, size: 21),
+  );
+
+  Widget _detailsButton() => TextButton(
+    onPressed: onTap,
+    style: TextButton.styleFrom(
+      minimumSize: const Size(0, 40),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      backgroundColor: const Color(0xFFE8DEFF),
+      foregroundColor: const Color(0xFF7557B7),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+    ),
+    child: const Text('مشاهده پرونده'),
+  );
+
+  String? _budgetLabel() {
+    final List<String?> values = customer.intent == 'rent'
+        ? <String?>[
+            _value(customer.data['rental_deposit_min']),
+            _value(customer.data['rental_deposit_max']),
+            _value(customer.data['rental_rent_min']),
+            _value(customer.data['rental_rent_max']),
+          ]
+        : <String?>[
+            _value(customer.data['budget_min']),
+            _value(customer.data['budget_max']),
+          ];
+    final available = values.whereType<String>().toList();
+    if (available.isEmpty) return null;
+    return 'مبلغ درخواستی ${available.join(' تا ')}';
+  }
+
+  static String? _value(Object? value) {
+    if (value == null || '$value'.trim().isEmpty || '$value' == 'null') {
+      return null;
+    }
+    return formatPersianDigits(value);
+  }
+
+  static String? _areaRange(Object? min, Object? max) {
+    final minimum = _value(min);
+    final maximum = _value(max);
+    if (minimum == null && maximum == null) return null;
+    if (minimum != null && maximum != null) return '$minimum تا $maximum';
+    return minimum ?? maximum;
   }
 }

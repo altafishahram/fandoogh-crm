@@ -3,6 +3,8 @@ import 'package:fandoogh_crm/core/localization/persian_date.dart';
 import 'package:fandoogh_crm/features/properties/data/property_repository.dart';
 import 'package:flutter/material.dart';
 
+enum PropertyCardDisplay { classic, visual }
+
 final class PropertyCard extends StatelessWidget {
   const PropertyCard({
     required this.title,
@@ -13,9 +15,15 @@ final class PropertyCard extends StatelessWidget {
     required this.monthlyRent,
     required this.parkingSpaces,
     required this.ownerName,
+    this.code = '',
+    this.status = 'available',
+    this.propertyType = 'other',
+    this.district = '',
+    this.bedrooms,
     this.imageUrl,
     this.imageHeaders,
     this.pendingSync = false,
+    this.display = PropertyCardDisplay.classic,
     this.onTap,
     super.key,
   });
@@ -24,6 +32,7 @@ final class PropertyCard extends StatelessWidget {
     PropertyRecord property, {
     Map<String, String>? imageHeaders,
     VoidCallback? onTap,
+    PropertyCardDisplay display = PropertyCardDisplay.classic,
   }) {
     return PropertyCard(
       title: property.title,
@@ -37,9 +46,15 @@ final class PropertyCard extends StatelessWidget {
       monthlyRent: property.data['monthly_rent'],
       parkingSpaces: property.data['parking_spaces'],
       ownerName: _ownerName(property.owners),
+      code: property.code,
+      status: property.status,
+      propertyType: property.propertyType,
+      district: _text(property.data['district'], ''),
+      bedrooms: property.data['bedrooms'],
       imageUrl: _imageUrl(property.data),
       imageHeaders: imageHeaders,
       pendingSync: property.pendingSync,
+      display: display,
       onTap: onTap,
     );
   }
@@ -48,6 +63,7 @@ final class PropertyCard extends StatelessWidget {
     Map<String, dynamic> property, {
     Map<String, String>? imageHeaders,
     VoidCallback? onTap,
+    PropertyCardDisplay display = PropertyCardDisplay.classic,
   }) {
     final data = _normalizedProperty(property);
     final rawOwners = data['owners'];
@@ -73,9 +89,15 @@ final class PropertyCard extends StatelessWidget {
       monthlyRent: data['monthly_rent'] ?? data['monthlyRent'],
       parkingSpaces: data['parking_spaces'] ?? data['parkingSpaces'],
       ownerName: _text(data['owner_name'], _ownerName(owners)),
+      code: _text(data['code'], ''),
+      status: _text(data['status'], 'available'),
+      propertyType: _text(data['property_type'], 'other'),
+      district: _text(data['district'], ''),
+      bedrooms: data['bedrooms'],
       imageUrl: _imageUrl(data),
       imageHeaders: imageHeaders,
       pendingSync: data['pending_sync'] == true,
+      display: display,
       onTap: onTap,
     );
   }
@@ -88,13 +110,26 @@ final class PropertyCard extends StatelessWidget {
   final Object? monthlyRent;
   final Object? parkingSpaces;
   final String ownerName;
+  final String code;
+  final String status;
+  final String propertyType;
+  final String district;
+  final Object? bedrooms;
   final String? imageUrl;
   final Map<String, String>? imageHeaders;
   final bool pendingSync;
+  final PropertyCardDisplay display;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    if (display == PropertyCardDisplay.visual) {
+      return _buildVisual(context);
+    }
+    return _buildClassic(context);
+  }
+
+  Widget _buildClassic(BuildContext context) {
     final isRent = transactionType == 'rent';
     final theme = Theme.of(context);
     final textColor = theme.colorScheme.onSurface;
@@ -166,13 +201,14 @@ final class PropertyCard extends StatelessWidget {
                           _hasParking(parkingSpaces) ? 'دارد' : 'ندارد',
                           Icons.directions_car_filled_outlined,
                         ),
-                        _line(
-                          context,
-                          'مالک',
-                          ownerName.trim().isEmpty ? 'بدون مالک' : ownerName,
-                          Icons.person_outline_rounded,
-                          divider: false,
-                        ),
+                        if (!isRent)
+                          _line(
+                            context,
+                            'مالک',
+                            ownerName.trim().isEmpty ? 'بدون مالک' : ownerName,
+                            Icons.person_outline_rounded,
+                            divider: false,
+                          ),
                         if (pendingSync)
                           Padding(
                             padding: const EdgeInsets.only(top: 3),
@@ -198,6 +234,119 @@ final class PropertyCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisual(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isRent = transactionType == 'rent';
+    final priceLabel = isRent ? 'شرایط اجاره' : 'مبلغ کل';
+    final price = isRent
+        ? 'ودیعه ${formatToman(depositAmount)} · اجاره ${formatToman(monthlyRent)}'
+        : formatToman(salePrice);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AspectRatio(
+              aspectRatio: 1,
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  _PropertyVisualImage(
+                    imageUrl: imageUrl,
+                    imageHeaders: imageHeaders,
+                  ),
+                  PositionedDirectional(
+                    top: 12,
+                    start: 12,
+                    child: _VisualBadge(
+                      label: isRent ? 'اجاره' : 'فروش',
+                      color: isRent ? AppCardColors.teal : AppCardColors.coral,
+                    ),
+                  ),
+                  if (pendingSync)
+                    const PositionedDirectional(
+                      top: 12,
+                      end: 12,
+                      child: _VisualBadge(
+                        label: 'در صف همگام‌سازی',
+                        color: AppCardColors.orange,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _VisualFact(
+                          value: _formatArea(area),
+                          label: 'مساحت',
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: _VisualFact(
+                          value: _hasParking(parkingSpaces) ? 'دارد' : 'ندارد',
+                          label: 'پارکینگ',
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: _VisualFact(
+                          value: ownerName.trim().isEmpty
+                              ? 'بدون مالک'
+                              : ownerName,
+                          label: 'مالک',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Divider(height: 1, color: colors.outlineVariant),
+                  const SizedBox(height: 10),
+                  Text(
+                    priceLabel,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    price,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -408,6 +557,106 @@ final class PropertyCard extends StatelessWidget {
   }
 }
 
+abstract final class AppCardColors {
+  static const teal = Color(0xFF0F766E);
+  static const coral = Color(0xFFC2414F);
+  static const orange = Color(0xFFB45309);
+}
+
+final class _VisualBadge extends StatelessWidget {
+  const _VisualBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(9),
+      boxShadow: const <BoxShadow>[
+        BoxShadow(
+          color: Color(0x24000000),
+          blurRadius: 8,
+          offset: Offset(0, 3),
+        ),
+      ],
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    ),
+  );
+}
+
+final class _VisualFact extends StatelessWidget {
+  const _VisualFact({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(11),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+      child: Column(
+        children: <Widget>[
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+final class _PropertyVisualImage extends StatelessWidget {
+  const _PropertyVisualImage({
+    required this.imageUrl,
+    required this.imageHeaders,
+  });
+
+  final String? imageUrl;
+  final Map<String, String>? imageHeaders;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = imageUrl?.trim();
+    if (value == null || value.isEmpty) {
+      return const _PropertyImagePlaceholder();
+    }
+    return Image.network(
+      _PropertyCardImage._contentUrl(value),
+      fit: BoxFit.cover,
+      headers: imageHeaders,
+      errorBuilder: (_, _, _) => const _PropertyImagePlaceholder(),
+    );
+  }
+}
+
 final class _PropertyCardImage extends StatelessWidget {
   const _PropertyCardImage({
     required this.imageUrl,
@@ -434,8 +683,8 @@ final class _PropertyCardImage extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: isRent
-                    ? const Color(0xFF6F9A73)
-                    : const Color(0xFFC94A4A),
+                    ? AppCardColors.teal
+                    : AppCardColors.coral,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Padding(

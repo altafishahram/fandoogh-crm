@@ -67,6 +67,7 @@ final class _ChoiceFieldState extends State<ChoiceField> {
                     .map((item) => item.label)
                     .firstOrNull ??
                 selected;
+      final hasDisplayValue = selectedLabel.isNotEmpty;
       final theme = Theme.of(context);
       return CompositedTransformTarget(
         link: _layerLink,
@@ -78,7 +79,9 @@ final class _ChoiceFieldState extends State<ChoiceField> {
             borderRadius: BorderRadius.circular(4),
             onTap: _handleTap,
             child: InputDecorator(
-              isEmpty: selected == null,
+              // «انتخاب نشده» is a visible value, so the label must float
+              // instead of being painted over the placeholder.
+              isEmpty: !hasDisplayValue,
               decoration: InputDecoration(
                 labelText: widget.label,
                 border: const OutlineInputBorder(),
@@ -91,6 +94,9 @@ final class _ChoiceFieldState extends State<ChoiceField> {
               ),
               child: Text(
                 selectedLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
                 style: TextStyle(
                   color: selected == null
                       ? theme.colorScheme.onSurfaceVariant

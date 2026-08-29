@@ -8,6 +8,7 @@ use App\Domain\Customer\Enums\CustomerIntent;
 use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Customer\Enums\PreferredContactMethod;
 use App\Domain\Tenancy\Concerns\BelongsToAgency;
+use Carbon\CarbonInterface;
 use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property CustomerStatus $status
  * @property PreferredContactMethod $preferred_contact_method
  * @property User|null $assignedAgent
+ * @property CarbonInterface|null $matching_eligible_at
  */
 class Customer extends Model
 {
@@ -48,8 +50,10 @@ class Customer extends Model
         'is_exchangeable', 'has_pool', 'has_jacuzzi', 'has_sauna', 'description', 'lock_version',
         'building_type', 'structure_type', 'has_water', 'has_electricity', 'has_gas',
         'telephone_line_count', 'land_area', 'building_area',
+        'land_area_min', 'land_area_max', 'building_area_min', 'building_area_max',
         'min_parking_spaces', 'has_parking', 'has_storage_room', 'owner_resides',
         'has_elevator', 'has_balcony',
+        'matching_eligible_at',
     ];
 
     /** @return BelongsTo<User, $this> */
@@ -122,6 +126,8 @@ class Customer extends Model
             'toilet_types' => 'array',
             'budget_min' => 'decimal:2', 'budget_max' => 'decimal:2',
             'min_area_sqm' => 'decimal:2', 'max_area_sqm' => 'decimal:2',
+            'land_area_min' => 'decimal:2', 'land_area_max' => 'decimal:2',
+            'building_area_min' => 'decimal:2', 'building_area_max' => 'decimal:2',
             'rental_deposit_min' => 'decimal:2', 'rental_deposit_max' => 'decimal:2',
             'rental_rent_min' => 'decimal:2', 'rental_rent_max' => 'decimal:2',
             'accepts_rent_conversion' => 'boolean', 'has_master_bathroom' => 'boolean',
@@ -131,6 +137,7 @@ class Customer extends Model
             'min_parking_spaces' => 'integer', 'has_parking' => 'boolean',
             'has_storage_room' => 'boolean', 'owner_resides' => 'boolean',
             'has_elevator' => 'boolean', 'has_balcony' => 'boolean',
+            'matching_eligible_at' => 'immutable_datetime',
         ];
     }
 }

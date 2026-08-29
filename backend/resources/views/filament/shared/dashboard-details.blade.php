@@ -1,11 +1,26 @@
 <x-filament-widgets::widget>
     <div class="space-y-6">
+        <section class="melkban-dashboard-welcome" aria-labelledby="melkban-welcome-title">
+            <div>
+                <h2 id="melkban-welcome-title">سلام {{ auth()->user()?->name }}، خوش آمدید</h2>
+                <p>کارهای آژانس، وضعیت املاک و آخرین فعالیت‌ها را در یک نگاه دنبال کنید.</p>
+            </div>
+        </section>
+
         <x-filament::section heading="دسترسی سریع">
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <a class="melkban-card melkban-card-link p-4 font-semibold" href="{{ $urls['property_create'] }}">ثبت ملک جدید</a>
-                <a class="melkban-card melkban-card-link p-4 font-semibold" href="{{ $urls['customer_create'] }}">ثبت مشتری جدید</a>
-                <a class="melkban-card melkban-card-link p-4 font-semibold" href="{{ $urls['properties'] }}">فهرست و جست‌وجوی املاک</a>
-                <a class="melkban-card melkban-card-link p-4 font-semibold" href="{{ $urls['customers'] }}">فهرست مشتریان</a>
+                <a class="melkban-card melkban-card-link melkban-quick-link p-4 font-semibold" href="{{ $urls['property_create'] }}">
+                    <span class="melkban-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></span><span>ثبت ملک جدید</span>
+                </a>
+                <a class="melkban-card melkban-card-link melkban-quick-link p-4 font-semibold" href="{{ $urls['customer_create'] }}">
+                    <span class="melkban-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></span><span>ثبت مشتری جدید</span>
+                </a>
+                <a class="melkban-card melkban-card-link melkban-quick-link p-4 font-semibold" href="{{ $urls['properties'] }}">
+                    <span class="melkban-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg></span><span>فهرست و جست‌وجوی املاک</span>
+                </a>
+                <a class="melkban-card melkban-card-link melkban-quick-link p-4 font-semibold" href="{{ $urls['customers'] }}">
+                    <span class="melkban-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87" /></svg></span><span>فهرست مشتریان</span>
+                </a>
             </div>
         </x-filament::section>
 

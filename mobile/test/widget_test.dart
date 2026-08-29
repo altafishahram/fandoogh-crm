@@ -59,7 +59,7 @@ void main() {
 
     expect(find.text('املاک'), findsOneWidget);
     expect(find.text('آپارتمان سعادت‌آباد'), findsOneWidget);
-    expect(find.text('ملک جدید'), findsOneWidget);
+    expect(find.byTooltip('ملک جدید'), findsOneWidget);
     expect(find.byType(SearchBar), findsOneWidget);
     expect(find.byTooltip('مرتب‌سازی'), findsOneWidget);
     expect(find.byTooltip('فیلترها'), findsOneWidget);
@@ -110,7 +110,7 @@ void main() {
     expect(_richTextContaining('متراژ'), findsOneWidget);
     expect(_richTextContaining('ودیعه'), findsOneWidget);
     expect(_richTextContaining('پارکینگ'), findsOneWidget);
-    expect(_richTextContaining('مالک'), findsOneWidget);
+    expect(_richTextContaining('مالک'), findsNothing);
     expect(find.text('کد ملک'), findsNothing);
   });
 
@@ -251,9 +251,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('مشتریان'), findsOneWidget);
+      expect(find.text('مشتری‌ها'), findsOneWidget);
       expect(find.text('نیما مرادی'), findsOneWidget);
-      expect(find.text('مشتری جدید'), findsOneWidget);
+      expect(find.byTooltip('مشتری جدید'), findsOneWidget);
       expect(find.byTooltip('مرتب‌سازی'), findsOneWidget);
       expect(find.byTooltip('فیلترها'), findsOneWidget);
       expect(tester.takeException(), isNull);

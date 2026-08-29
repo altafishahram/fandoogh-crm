@@ -149,6 +149,7 @@ final class OfflineStore {
     for (final suffix in <String>[
       'cache_properties',
       'cache_customers',
+      'cache_match-notifications',
       'operations',
       'cursor_properties',
       'cursor_customers',

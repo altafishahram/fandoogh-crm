@@ -5,6 +5,8 @@ import 'package:fandoogh_crm/features/auth/presentation/login_page.dart';
 import 'package:fandoogh_crm/features/auth/presentation/splash_page.dart';
 import 'package:fandoogh_crm/features/auth/presentation/suspended_page.dart';
 import 'package:fandoogh_crm/features/dashboard/presentation/dashboard_page.dart';
+import 'package:fandoogh_crm/features/match_notifications/presentation/match_notification_detail_page.dart';
+import 'package:fandoogh_crm/features/match_notifications/presentation/match_notifications_page.dart';
 import 'package:fandoogh_crm/features/customers/presentation/customer_detail_page.dart';
 import 'package:fandoogh_crm/features/customers/presentation/customer_form_page.dart';
 import 'package:fandoogh_crm/features/customers/presentation/customers_page.dart';
@@ -35,6 +37,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _, child) => AppShell(child: child),
         routes: <RouteBase>[
           GoRoute(path: '/dashboard', builder: (_, _) => const DashboardPage()),
+          GoRoute(
+            path: '/match-notifications',
+            builder: (_, _) => const MatchNotificationsPage(),
+            routes: <RouteBase>[
+              GoRoute(
+                path: ':id',
+                builder: (_, state) => MatchNotificationDetailPage(
+                  notificationId: int.parse(state.pathParameters['id']!),
+                ),
+              ),
+            ],
+          ),
           GoRoute(
             path: '/properties',
             builder: (_, _) => const PropertiesPage(),

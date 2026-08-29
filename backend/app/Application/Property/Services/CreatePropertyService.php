@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Property\Services;
 
+use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Property\Contracts\PropertyRepositoryContract;
 use App\Application\Property\Data\CreatePropertyData;
 use App\Application\Property\Data\PropertyOwnershipData;
@@ -29,6 +30,7 @@ final readonly class CreatePropertyService
         private PropertyHistoryWriter $history,
         private PropertyPricingCalculator $pricing,
         private TenantContext $tenant,
+        private MatchingRebuildDispatcher $matching,
     ) {}
 
     public function execute(User $actor, CreatePropertyData $data): Property
@@ -53,7 +55,7 @@ final readonly class CreatePropertyService
             $this->agents->validate($assignedAgentId, $this->tenant->agencyId());
         }
 
-        return DB::connection()->transaction(function () use ($actor, $data, $assignedAgentId, $attributes): Property {
+        $property = DB::connection()->transaction(function () use ($actor, $data, $assignedAgentId, $attributes): Property {
             $settings = AgencySettings::query()->lockForUpdate()->firstOrFail();
             $sequence = $settings->next_property_sequence;
             $code = $settings->property_code_prefix.'-'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
@@ -69,6 +71,7 @@ final readonly class CreatePropertyService
                 'currency_code' => $this->tenant->agency()->currency_code,
                 'currency_unit' => 'toman',
                 'lock_version' => 1,
+                'matching_eligible_at' => now(),
             ]);
 
             if ($data->embeddedOwner !== null) {
@@ -89,6 +92,10 @@ final readonly class CreatePropertyService
 
             return $property->load(['owners', 'assignedAgent']);
         }, 3);
+
+        $this->matching->dispatchForAgency((int) $property->agency_id);
+
+        return $property;
     }
 
     private function attachOwner(Property $property, PropertyOwnershipData $ownership): void

@@ -31,6 +31,8 @@ final class CustomerInvariantValidator
 
         $this->orderedPair($attributes['budget_min'] ?? null, $attributes['budget_max'] ?? null, true);
         $this->orderedPair($attributes['min_area_sqm'] ?? null, $attributes['max_area_sqm'] ?? null, false);
+        $this->orderedPair($attributes['land_area_min'] ?? null, $attributes['land_area_max'] ?? null, false);
+        $this->orderedPair($attributes['building_area_min'] ?? null, $attributes['building_area_max'] ?? null, false);
         $this->orderedPair($attributes['rental_deposit_min'] ?? null, $attributes['rental_deposit_max'] ?? null, true);
         $this->orderedPair($attributes['rental_rent_min'] ?? null, $attributes['rental_rent_max'] ?? null, true);
 
@@ -109,6 +111,10 @@ final class CustomerInvariantValidator
                 || ($attributes['telephone_line_count'] ?? null) !== null
                 || ($attributes['land_area'] ?? null) !== null
                 || ($attributes['building_area'] ?? null) !== null
+                || ($attributes['land_area_min'] ?? null) !== null
+                || ($attributes['land_area_max'] ?? null) !== null
+                || ($attributes['building_area_min'] ?? null) !== null
+                || ($attributes['building_area_max'] ?? null) !== null
                 || ($attributes['has_water'] ?? false)
                 || ($attributes['has_electricity'] ?? false)
                 || ($attributes['has_gas'] ?? false))) {
@@ -116,8 +122,23 @@ final class CustomerInvariantValidator
         }
 
         if (($attributes['full_name'] ?? null) !== null) {
-            if (($attributes['desired_property_type'] ?? null) === null
-                || ($attributes['min_area_sqm'] ?? null) === null
+            $isIndustrial = ($attributes['desired_property_type'] ?? null) === PropertyType::Industrial->value;
+            if (($attributes['desired_property_type'] ?? null) === null) {
+                throw new DomainConflictException('نوع ملک و بازه متراژ برای نیاز مشتری الزامی است.');
+            }
+            if ($isIndustrial) {
+                $rangeFields = ['land_area_min', 'land_area_max', 'building_area_min', 'building_area_max'];
+                $hasRange = array_reduce(
+                    $rangeFields,
+                    static fn (bool $complete, string $field): bool => $complete && ($attributes[$field] ?? null) !== null,
+                    true,
+                );
+                $hasLegacyAreas = ($attributes['land_area'] ?? null) !== null
+                    && ($attributes['building_area'] ?? null) !== null;
+                if (! $hasRange && ! $hasLegacyAreas) {
+                    throw new DomainConflictException('بازه متراژ زمین و بنا برای نیاز صنعتی الزامی است.');
+                }
+            } elseif (($attributes['min_area_sqm'] ?? null) === null
                 || ($attributes['max_area_sqm'] ?? null) === null) {
                 throw new DomainConflictException('نوع ملک و بازه متراژ برای نیاز مشتری الزامی است.');
             }
@@ -148,6 +169,10 @@ final class CustomerInvariantValidator
 
     private function orderedPair(mixed $minimum, mixed $maximum, bool $allowZero): void
     {
+        if (($minimum !== null && ! is_numeric($minimum)) || ($maximum !== null && ! is_numeric($maximum))) {
+            throw new DomainConflictException('بازه عددی واردشده معتبر نیست.');
+        }
+
         $minimumValue = $minimum === null ? null : (float) $minimum;
         $maximumValue = $maximum === null ? null : (float) $maximum;
         if (($minimumValue !== null && ($allowZero ? $minimumValue < 0 : $minimumValue <= 0))

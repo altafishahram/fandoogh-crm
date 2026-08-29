@@ -1,7 +1,9 @@
 import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/network/paged_result.dart';
+import 'package:fandoogh_crm/core/localization/persian_number.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
+import 'package:fandoogh_crm/core/storage/token_store.dart';
 import 'package:fandoogh_crm/features/properties/data/property_repository.dart';
 import 'package:fandoogh_crm/features/properties/presentation/widgets/property_card.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +32,29 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
   String? _bedroomsMin;
   Map<String, Object?> _featureFilters = const <String, Object?>{};
   String _order = 'newest';
+  bool _visualCards = false;
+
+  static const _cardViewKey = 'melkban_property_card_view';
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(_restoreCardView);
+  }
+
+  Future<void> _restoreCardView() async {
+    final value = await ref.read(secureStorageProvider).read(key: _cardViewKey);
+    if (!mounted) return;
+    setState(() => _visualCards = value == 'visual');
+  }
+
+  Future<void> _toggleCardView() async {
+    final next = !_visualCards;
+    setState(() => _visualCards = next);
+    await ref
+        .read(secureStorageProvider)
+        .write(key: _cardViewKey, value: next ? 'visual' : 'classic');
+  }
 
   @override
   void didChangeDependencies() {
@@ -48,108 +73,258 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
   Widget build(BuildContext context) {
     final value = ref.watch(propertiesProvider);
     final controller = ref.read(propertiesProvider.notifier);
+    final loadedCount = value.asData?.value.items.length ?? 0;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('املاک'),
-        actions: <Widget>[
-          PopupMenuButton<String>(
-            tooltip: 'مرتب‌سازی',
-            initialValue: _order,
-            onSelected: _setOrder,
-            icon: const Icon(Icons.sort_rounded),
-            itemBuilder: (_) => const <PopupMenuEntry<String>>[
-              PopupMenuItem(value: 'newest', child: Text('جدیدترین')),
-              PopupMenuItem(value: 'oldest', child: Text('قدیمی‌ترین')),
-            ],
-          ),
-          IconButton(
-            tooltip: 'فیلترها',
-            onPressed: _showFilters,
-            icon: Badge(
-              isLabelVisible: _hasFilters,
-              child: const Icon(Icons.tune_rounded),
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'new-property',
-        onPressed: () async {
-          final created = await context.push<bool>('/properties/new');
-          if (created == true) {
-            controller.refresh();
-          }
-        },
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('ملک جدید'),
-      ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: SearchBar(
-              controller: _search,
-              hintText: 'کد، عنوان یا نام مالک',
-              leading: const Icon(Icons.search_rounded),
-              trailing: <Widget>[
-                if (_search.text.isNotEmpty)
-                  IconButton(
-                    tooltip: 'پاک‌کردن',
-                    onPressed: () {
-                      _search.clear();
-                      _apply();
-                    },
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-              ],
-              onChanged: (_) => setState(() {}),
-              onSubmitted: (_) => _apply(),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Row(
-              children: <Widget>[
-                _transactionFilterButton(label: 'همه', value: null),
-                const SizedBox(width: 6),
-                _transactionFilterButton(label: 'فروش', value: 'sale'),
-                const SizedBox(width: 6),
-                _transactionFilterButton(label: 'اجاره', value: 'rent'),
-              ],
-            ),
-          ),
-          if (_hasFilters)
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: <Widget>[
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+              child: _pageHeader(
+                context,
+                loadedCount: loadedCount,
+                onCreate: () async {
+                  final created = await context.push<bool>('/properties/new');
+                  if (created == true) controller.refresh();
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
                 children: <Widget>[
-                  ..._filterChips,
-                  ActionChip(
-                    avatar: const Icon(Icons.filter_alt_off_outlined, size: 18),
-                    label: const Text('حذف فیلترها'),
-                    onPressed: _clearFilters,
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: SearchBar(
+                        controller: _search,
+                        hintText: 'نام، محله یا کد ملک',
+                        leading: const Icon(Icons.search_rounded),
+                        trailing: <Widget>[
+                          if (_search.text.isNotEmpty)
+                            IconButton(
+                              tooltip: 'پاک‌کردن',
+                              onPressed: () {
+                                _search.clear();
+                                _apply();
+                              },
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                        ],
+                        onChanged: (_) => setState(() {}),
+                        onSubmitted: (_) => _apply(),
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  _filterButton(context),
                 ],
               ),
             ),
-          Expanded(
-            child: value.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) =>
-                  ErrorState(error: error, onRetry: controller.refresh),
-              data: (page) => _PropertyList(
-                page: page,
-                onRefresh: controller.refresh,
-                onMore: controller.loadMore,
-                imageHeaders: _imageHeaders,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
+                children: <Widget>[
+                  _transactionFilterButton(label: 'همه', value: null),
+                  const SizedBox(width: 6),
+                  _transactionFilterButton(label: 'فروش', value: 'sale'),
+                  const SizedBox(width: 6),
+                  _transactionFilterButton(label: 'اجاره', value: 'rent'),
+                ],
+              ),
+            ),
+            if (_hasFilters)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    ..._filterChips,
+                    ActionChip(
+                      avatar: const Icon(
+                        Icons.filter_alt_off_outlined,
+                        size: 18,
+                      ),
+                      label: const Text('حذف فیلترها'),
+                      onPressed: _clearFilters,
+                    ),
+                  ],
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+              child: _listToolbar(context),
+            ),
+            Expanded(
+              child: value.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) =>
+                    ErrorState(error: error, onRetry: controller.refresh),
+                data: (page) => _PropertyList(
+                  page: page,
+                  onRefresh: controller.refresh,
+                  onMore: controller.loadMore,
+                  imageHeaders: _imageHeaders,
+                  visualCards: _visualCards,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pageHeader(
+    BuildContext context, {
+    required int loadedCount,
+    required VoidCallback onCreate,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final subtitle = loadedCount == 0
+        ? 'ملک‌های ثبت‌شده در فایل شما'
+        : '${formatPersianDigits(loadedCount)} ملک در این فهرست';
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'املاک',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Tooltip(
+          message: 'ملک جدید',
+          child: Semantics(
+            button: true,
+            label: 'ثبت ملک جدید',
+            child: Material(
+              color: colors.primary,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: onCreate,
+                borderRadius: BorderRadius.circular(16),
+                child: const SizedBox.square(
+                  dimension: 48,
+                  child: Icon(Icons.add_rounded, color: Colors.white, size: 26),
+                ),
               ),
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _filterButton(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: 'فیلترها',
+      child: IconButton(
+        onPressed: _showFilters,
+        style: IconButton.styleFrom(
+          minimumSize: const Size.square(48),
+          maximumSize: const Size.square(48),
+          backgroundColor: colors.surface,
+          foregroundColor: colors.onSurfaceVariant,
+          side: BorderSide(color: colors.outlineVariant),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        icon: Badge(
+          isLabelVisible: _hasFilters,
+          child: const Icon(Icons.tune_rounded),
+        ),
       ),
+    );
+  }
+
+  Widget _listToolbar(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            'فایل‌های ملک',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'مرتب‌سازی',
+          initialValue: _order,
+          onSelected: _setOrder,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _order == 'newest' ? 'جدیدترین' : 'قدیمی‌ترین',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.swap_vert_rounded,
+                  size: 19,
+                  color: colors.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+          itemBuilder: (_) => const <PopupMenuEntry<String>>[
+            PopupMenuItem(value: 'newest', child: Text('جدیدترین')),
+            PopupMenuItem(value: 'oldest', child: Text('قدیمی‌ترین')),
+          ],
+        ),
+        const SizedBox(width: 2),
+        Tooltip(
+          message: _visualCards ? 'نمایش کارت کلاسیک' : 'نمایش کارت تصویری',
+          child: IconButton(
+            onPressed: _toggleCardView,
+            style: IconButton.styleFrom(
+              minimumSize: const Size.square(44),
+              maximumSize: const Size.square(44),
+              backgroundColor: colors.surface,
+              foregroundColor: colors.primary,
+              side: BorderSide(color: colors.outlineVariant),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: Icon(
+              _visualCards
+                  ? Icons.view_agenda_outlined
+                  : Icons.grid_view_rounded,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -709,11 +884,13 @@ final class _PropertyList extends StatelessWidget {
     required this.onRefresh,
     required this.onMore,
     required this.imageHeaders,
+    required this.visualCards,
   });
   final PagedResult<PropertyRecord> page;
   final Future<void> Function() onRefresh;
   final Future<void> Function() onMore;
   final Map<String, String>? imageHeaders;
+  final bool visualCards;
 
   @override
   Widget build(BuildContext context) {
@@ -742,6 +919,9 @@ final class _PropertyList extends StatelessWidget {
           return PropertyCard.fromRecord(
             item,
             imageHeaders: imageHeaders,
+            display: visualCards
+                ? PropertyCardDisplay.visual
+                : PropertyCardDisplay.classic,
             onTap: item.id < 0
                 ? null
                 : () => context.push('/properties/${item.id}'),

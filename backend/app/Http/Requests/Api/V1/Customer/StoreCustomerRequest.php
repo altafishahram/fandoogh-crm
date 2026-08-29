@@ -71,6 +71,12 @@ final class StoreCustomerRequest extends FormRequest
             'telephone_line_count' => ['nullable', 'string', 'max:32'],
             'land_area' => ['nullable', 'string', 'max:64'],
             'building_area' => ['nullable', 'string', 'max:64'],
+            // Legacy industrial customers may still send the original single
+            // area notes. New records use the four numeric range fields.
+            'land_area_min' => [Rule::requiredIf(fn (): bool => $this->isIndustrial() && ! $this->hasLegacyIndustrialAreas()), 'nullable', 'numeric', 'gt:0'],
+            'land_area_max' => [Rule::requiredIf(fn (): bool => $this->isIndustrial() && ! $this->hasLegacyIndustrialAreas()), 'nullable', 'numeric', 'gt:0', 'gte:land_area_min'],
+            'building_area_min' => [Rule::requiredIf(fn (): bool => $this->isIndustrial() && ! $this->hasLegacyIndustrialAreas()), 'nullable', 'numeric', 'gt:0'],
+            'building_area_max' => [Rule::requiredIf(fn (): bool => $this->isIndustrial() && ! $this->hasLegacyIndustrialAreas()), 'nullable', 'numeric', 'gt:0', 'gte:building_area_min'],
             'min_parking_spaces' => ['nullable', 'integer', 'between:0,255'],
             'has_parking' => ['sometimes', 'boolean'],
             'has_storage_room' => ['sometimes', 'boolean'],
@@ -132,6 +138,20 @@ final class StoreCustomerRequest extends FormRequest
             (bool) ($data['has_parking'] ?? (($data['min_parking_spaces'] ?? 0) > 0)),
             (bool) ($data['has_storage_room'] ?? false),
             $data['intent'] === CustomerIntent::Rent->value && (bool) ($data['owner_resides'] ?? false),
+            isset($data['land_area_min']) ? (string) $data['land_area_min'] : null,
+            isset($data['land_area_max']) ? (string) $data['land_area_max'] : null,
+            isset($data['building_area_min']) ? (string) $data['building_area_min'] : null,
+            isset($data['building_area_max']) ? (string) $data['building_area_max'] : null,
         );
+    }
+
+    private function isIndustrial(): bool
+    {
+        return $this->input('desired_property_type') === PropertyType::Industrial->value;
+    }
+
+    private function hasLegacyIndustrialAreas(): bool
+    {
+        return filled($this->input('land_area')) && filled($this->input('building_area'));
     }
 }

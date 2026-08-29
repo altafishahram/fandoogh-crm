@@ -1254,7 +1254,7 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
       _hasElectricity = item.data['has_electricity'] == true;
       _hasGas = item.data['has_gas'] == true;
     } catch (error) {
-      _error = apiFailureFrom(error).message;
+      _error = apiFailureFrom(error).displayMessage;
     }
     if (mounted) {
       setState(() => _loading = false);
@@ -1292,8 +1292,8 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
     final tenantOccupiedSale =
         _transaction == 'sale' && _delivery == 'tenant_occupied';
     final body = <String, Object?>{
-      'title': _v('title'),
-      'description': _empty('description'),
+      'title': _raw('title'),
+      'description': _textOrNull('description'),
       'property_type': _type,
       'transaction_type': _transaction,
       'area_sqm': _v('area'),
@@ -1310,10 +1310,10 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
       'minimum_deposit': _transaction == 'rent' && _convertible
           ? _v('minimum_deposit')
           : null,
-      'city': _v('city'),
-      'district': _empty('district'),
-      'street_address': _v('address'),
-      'plaque': _empty('plaque'),
+      'city': _raw('city'),
+      'district': _textOrNull('district'),
+      'street_address': _raw('address'),
+      'plaque': _textOrNull('plaque'),
       'delivery_status': _delivery,
       'available_from': _transaction == 'sale' && _delivery == 'ready'
           ? PersianDate.fromGregorian(_availableFromDate!).isoDate
@@ -1353,7 +1353,7 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
       'has_jacuzzi': !_isLand && _jacuzzi,
       'has_sauna': !_isLand && _sauna,
       'building_type': _isLand ? null : _buildingType,
-      'structure_type': _isLand ? null : _empty('structure_type'),
+      'structure_type': _isLand ? null : _textOrNull('structure_type'),
       'has_water': !_isLand && _hasWater,
       'has_electricity': !_isLand && _hasElectricity,
       'has_gas': !_isLand && _hasGas,
@@ -1372,10 +1372,10 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
         ref.invalidate(propertyProvider(widget.propertyId!));
       } else {
         body['owner'] = <String, Object?>{
-          'full_name': _v('owner_name'),
+          'full_name': _raw('owner_name'),
           'mobile': _v('owner_mobile'),
           'phone': _empty('owner_phone'),
-          'notes': _empty('owner_notes'),
+          'notes': _textOrNull('owner_notes'),
         };
         final created = await ref
             .read(propertyRepositoryProvider)
@@ -1416,7 +1416,7 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = apiFailureFrom(error).message;
+          _error = apiFailureFrom(error).displayMessage;
         });
       }
     }
@@ -1434,7 +1434,15 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
     );
   }
 
-  String _v(String key) => normalizeNumericText(_c(key).text.trim());
+  String _raw(String key) => _c(key).text.trim();
+
+  String _v(String key) => normalizeNumericText(_raw(key));
+
+  String? _textOrNull(String key) {
+    final value = _raw(key);
+    return value.isEmpty ? null : value;
+  }
+
   String? _empty(String key) => _v(key).isEmpty ? null : _v(key);
   int? _int(String key) => int.tryParse(_v(key));
 

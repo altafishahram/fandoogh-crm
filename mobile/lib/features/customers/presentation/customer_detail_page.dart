@@ -147,8 +147,20 @@ final class _CustomerOverview extends ConsumerWidget {
                   'تعداد خط تلفن',
                   '${customer.data['telephone_line_count'] ?? '—'}',
                 ),
-                _row('متراژ زمین', '${customer.data['land_area'] ?? '—'}'),
-                _row('متراژ بنا', '${customer.data['building_area'] ?? '—'}'),
+                _row(
+                  'متراژ زمین',
+                  _areaRange(
+                    customer.data['land_area_min'] ?? customer.data['land_area'],
+                    customer.data['land_area_max'] ?? customer.data['land_area'],
+                  ),
+                ),
+                _row(
+                  'متراژ بنا',
+                  _areaRange(
+                    customer.data['building_area_min'] ?? customer.data['building_area'],
+                    customer.data['building_area_max'] ?? customer.data['building_area'],
+                  ),
+                ),
               ],
               if (customer.intent == 'buy')
                 _row(
@@ -311,6 +323,19 @@ final class _CustomerOverview extends ConsumerWidget {
       : '—';
 
   static String _yesNo(Object? value) => value == true ? 'بله' : 'خیر';
+
+  static String _areaRange(Object? minimum, Object? maximum) {
+    final min = '$minimum'.trim();
+    final max = '$maximum'.trim();
+    if ((minimum == null || min.isEmpty || min == 'null') &&
+        (maximum == null || max.isEmpty || max == 'null')) {
+      return '—';
+    }
+    if (min == max || maximum == null || max.isEmpty || max == 'null') {
+      return min;
+    }
+    return '$min تا $max';
+  }
 }
 
 final class _CustomerNotes extends ConsumerStatefulWidget {

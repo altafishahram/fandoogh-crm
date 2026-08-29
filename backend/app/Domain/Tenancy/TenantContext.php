@@ -10,6 +10,7 @@ use App\Domain\Tenancy\Exceptions\MissingTenantContextException;
 use App\Domain\User\Enums\RoleName;
 use App\Models\Agency;
 use App\Models\User;
+use Closure;
 use Illuminate\Support\Facades\Log;
 
 final class TenantContext
@@ -70,6 +71,41 @@ final class TenantContext
             'user_id' => $user->getKey(),
             'agency_id' => $agency->getKey(),
         ]);
+    }
+
+    public function establishAgency(Agency $agency): void
+    {
+        $this->clear();
+
+        if (! $agency->exists || ! $agency->is_active) {
+            throw new AgencyInactiveException('دسترسی آژانس غیرفعال شده است.');
+        }
+
+        $this->agency = $agency;
+        $this->established = true;
+
+        Log::withContext(['agency_id' => $agency->getKey(), 'user_id' => null]);
+    }
+
+    /** @template TReturn
+     * @param  Closure(): TReturn  $callback
+     * @return TReturn
+     */
+    public function runForAgency(Agency $agency, Closure $callback): mixed
+    {
+        $previousAgency = $this->agency;
+        $previousUser = $this->user;
+        $previousEstablished = $this->established;
+
+        $this->establishAgency($agency);
+
+        try {
+            return $callback();
+        } finally {
+            $this->agency = $previousAgency;
+            $this->user = $previousUser;
+            $this->established = $previousEstablished;
+        }
     }
 
     public function agency(): Agency

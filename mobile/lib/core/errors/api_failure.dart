@@ -42,6 +42,51 @@ final class ApiFailure implements Exception {
   final String? requestId;
   final Map<String, Object?> details;
 
+  String get displayMessage {
+    if (code != 'VALIDATION_FAILED' || details.isEmpty) return message;
+
+    final fields = details.keys.map(_fieldLabel).toSet().join('، ');
+    return fields.isEmpty ? message : '$message\nموارد نیازمند بررسی: $fields';
+  }
+
+  static String _fieldLabel(String field) =>
+      <String, String>{
+        'title': 'عنوان ملک',
+        'full_name': 'نام کامل',
+        'mobile': 'شماره همراه',
+        'phone': 'تلفن ثابت',
+        'property_type': 'نوع ملک',
+        'transaction_type': 'نوع معامله',
+        'desired_property_type': 'نوع ملک موردنظر',
+        'area_sqm': 'مساحت',
+        'min_area_sqm': 'حداقل متراژ',
+        'max_area_sqm': 'حداکثر متراژ',
+        'sale_price': 'مبلغ کل فروش',
+        'sale_price_per_sqm': 'مبلغ هر متر',
+        'deposit_amount': 'ودیعه',
+        'monthly_rent': 'اجاره ماهانه',
+        'rental_deposit_min': 'حداقل ودیعه',
+        'rental_deposit_max': 'حداکثر ودیعه',
+        'rental_rent_min': 'حداقل اجاره',
+        'rental_rent_max': 'حداکثر اجاره',
+        'city': 'شهر',
+        'desired_city': 'شهر موردنظر',
+        'street_address': 'نشانی',
+        'plaque': 'شماره پلاک نشانی',
+        'delivery_status': 'وضعیت تخلیه',
+        'available_from': 'تاریخ آماده تحویل',
+        'evacuation_date': 'تاریخ تخلیه',
+        'building_type': 'نوع بنا',
+        'land_area_min': 'حداقل متراژ زمین',
+        'land_area_max': 'حداکثر متراژ زمین',
+        'building_area_min': 'حداقل متراژ بنا',
+        'building_area_max': 'حداکثر متراژ بنا',
+        'owner.full_name': 'نام کامل مالک',
+        'owner.mobile': 'شماره همراه مالک',
+        'expected_version': 'نسخه اطلاعات',
+      }[field] ??
+      field;
+
   static String _fallbackCode(DioException exception) =>
       switch (exception.type) {
         DioExceptionType.connectionTimeout ||

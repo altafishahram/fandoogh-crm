@@ -1,9 +1,11 @@
 import 'package:fandoogh_crm/core/auth/auth_controller.dart';
-import 'package:fandoogh_crm/core/config/app_config.dart';
 import 'package:fandoogh_crm/core/localization/persian_date.dart';
 import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/network/api_repository.dart';
+import 'package:fandoogh_crm/core/theme/app_theme.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_notification_repository.dart';
+import 'package:fandoogh_crm/features/properties/presentation/widgets/property_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,17 +21,13 @@ final class DashboardPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(dashboardProvider);
     final auth = ref.watch(authControllerProvider);
+    final unreadState = ref.watch(matchNotificationUnreadCountProvider);
+    final unreadCount = unreadState.hasValue ? unreadState.requireValue : 0;
     final canCreateProperty = auth.can('properties.create');
+    final canCreateCustomer = auth.can('customers.create');
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      floatingActionButton: canCreateProperty
-          ? FloatingActionButton(
-              tooltip: 'ثبت ملک جدید',
-              onPressed: () => context.push('/properties/new'),
-              child: const Icon(Icons.add_rounded),
-            )
-          : null,
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: dashboard.when(
@@ -48,8 +46,9 @@ final class DashboardPage extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: _DashboardHeader(
                     displayName: auth.displayName,
+                    unreadCount: unreadCount,
                     onProfile: () => context.push('/profile'),
-                    onNotifications: () => _showComingSoon(context),
+                    onNotifications: () => context.push('/match-notifications'),
                   ),
                 ),
                 SliverPadding(
@@ -59,6 +58,11 @@ final class DashboardPage extends ConsumerWidget {
                       _SearchLauncher(onTap: () => context.push('/search')),
                       const SizedBox(height: 18),
                       _MetricsRow(data: data),
+                      const SizedBox(height: 18),
+                      _QuickActions(
+                        canCreateProperty: canCreateProperty,
+                        canCreateCustomer: canCreateCustomer,
+                      ),
                       const SizedBox(height: 24),
                       _SectionHeading(
                         title: 'ملک‌های اخیر',
@@ -82,22 +86,18 @@ final class DashboardPage extends ConsumerWidget {
       ),
     );
   }
-
-  static void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('اعلان تازه‌ای وجود ندارد.')));
-  }
 }
 
 final class _DashboardHeader extends StatelessWidget {
   const _DashboardHeader({
     required this.displayName,
+    required this.unreadCount,
     required this.onProfile,
     required this.onNotifications,
   });
 
   final String displayName;
+  final int unreadCount;
   final VoidCallback onProfile;
   final VoidCallback onNotifications;
 
@@ -105,9 +105,17 @@ final class _DashboardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.primary,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: <Color>[
+            Color(0xFF115E59),
+            Color(0xFF0F766E),
+            Color(0xFF17988C),
+          ],
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: SafeArea(
         bottom: false,
@@ -140,17 +148,17 @@ final class _DashboardHeader extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'اعلان‌ها',
+                  _HeaderAction(
+                    tooltip: 'اعلان‌های تطبیق',
                     onPressed: onNotifications,
-                    color: colors.onPrimary,
-                    icon: const Icon(Icons.notifications_none_rounded),
+                    badge: unreadCount,
+                    icon: Icons.notifications_none_rounded,
                   ),
-                  IconButton(
+                  const SizedBox(width: 8),
+                  _HeaderAction(
                     tooltip: 'حساب کاربری',
                     onPressed: onProfile,
-                    color: colors.onPrimary,
-                    icon: const Icon(Icons.account_circle_outlined),
+                    icon: Icons.person_outline_rounded,
                   ),
                 ],
               ),
@@ -175,6 +183,36 @@ final class _DashboardHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+final class _HeaderAction extends StatelessWidget {
+  const _HeaderAction({
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+    this.badge = 0,
+  });
+
+  final String tooltip;
+  final VoidCallback onPressed;
+  final IconData icon;
+  final int badge;
+
+  @override
+  Widget build(BuildContext context) => Badge(
+    isLabelVisible: badge > 0,
+    label: Text(badge > 99 ? '۹۹+' : persianDigits(badge)),
+    child: IconButton.filledTonal(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      style: IconButton.styleFrom(
+        minimumSize: const Size.square(44),
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.white.withValues(alpha: .13),
+      ),
+      icon: Icon(icon),
+    ),
+  );
 }
 
 final class _SearchLauncher extends StatelessWidget {
@@ -235,7 +273,7 @@ final class _MetricsRow extends StatelessWidget {
             value: activeCustomers,
             suffix: 'نفر',
             icon: Icons.people_outline_rounded,
-            color: const Color(0xFF2AA6A6),
+            color: AppTheme.violet,
           ),
         ),
         const SizedBox(width: 8),
@@ -245,7 +283,7 @@ final class _MetricsRow extends StatelessWidget {
             value: unassigned,
             suffix: 'ملک',
             icon: Icons.assignment_late_outlined,
-            color: const Color(0xFFE19A1A),
+            color: AppTheme.orange,
           ),
         ),
       ],
@@ -259,6 +297,150 @@ final class _MetricsRow extends StatelessWidget {
 
   static int _asInt(Object? value) =>
       value is num ? value.toInt() : int.tryParse('$value') ?? 0;
+}
+
+final class _QuickActions extends StatelessWidget {
+  const _QuickActions({
+    required this.canCreateProperty,
+    required this.canCreateCustomer,
+  });
+
+  final bool canCreateProperty;
+  final bool canCreateCustomer;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = <_QuickActionData>[
+      if (canCreateProperty)
+        const _QuickActionData(
+          'ثبت ملک جدید',
+          'افزودن پرونده ملک',
+          Icons.add_home_work_outlined,
+          AppTheme.primary,
+          '/properties/new',
+        ),
+      if (canCreateCustomer)
+        const _QuickActionData(
+          'ثبت مشتری جدید',
+          'افزودن نیاز مشتری',
+          Icons.person_add_alt_1_outlined,
+          AppTheme.violet,
+          '/customers/new',
+        ),
+      const _QuickActionData(
+        'فهرست املاک',
+        'جست‌وجو و فیلتر',
+        Icons.apartment_outlined,
+        AppTheme.blue,
+        '/properties',
+      ),
+      const _QuickActionData(
+        'فهرست مشتریان',
+        'پیگیری درخواست‌ها',
+        Icons.people_outline_rounded,
+        AppTheme.orange,
+        '/customers',
+      ),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          'دسترسی سریع',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const gap = 10.0;
+            final width = (constraints.maxWidth - gap) / 2;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: actions
+                  .map(
+                    (action) => SizedBox(
+                      width: width,
+                      child: _QuickAction(data: action),
+                    ),
+                  )
+                  .toList(growable: false),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+final class _QuickAction extends StatelessWidget {
+  const _QuickAction({required this.data});
+
+  final _QuickActionData data;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => context.push(data.route),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: data.color.withValues(alpha: .11),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(data.icon, color: data.color),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    data.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  Text(
+                    data.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+final class _QuickActionData {
+  const _QuickActionData(
+    this.title,
+    this.subtitle,
+    this.icon,
+    this.color,
+    this.route,
+  );
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final String route;
 }
 
 final class _MetricCard extends StatelessWidget {
@@ -387,10 +569,11 @@ final class _RecentProperties extends ConsumerWidget {
     return Column(
       children: <Widget>[
         for (var index = 0; index < values.length; index++) ...<Widget>[
-          _DashboardPropertyCard(
-            property: values[index],
+          PropertyCard.fromMap(
+            values[index],
             imageHeaders: headers,
             onTap: () => onTap(_idOf(values[index])),
+            display: PropertyCardDisplay.classic,
           ),
           if (index < values.length - 1) const SizedBox(height: 10),
         ],
@@ -400,223 +583,6 @@ final class _RecentProperties extends ConsumerWidget {
 
   static int _idOf(Map<String, dynamic> value) =>
       (value['id'] as num?)?.toInt() ?? 0;
-}
-
-final class _DashboardPropertyCard extends StatelessWidget {
-  const _DashboardPropertyCard({
-    required this.property,
-    required this.imageHeaders,
-    required this.onTap,
-  });
-
-  final Map<String, dynamic> property;
-  final Map<String, String>? imageHeaders;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final transaction = '${property['transaction_type'] ?? 'sale'}';
-    final isRent = transaction == 'rent';
-    final status = '${property['status'] ?? ''}';
-    final title = '${property['title'] ?? 'بدون عنوان'}';
-    final area = property['area_sqm'] ?? property['building_area'];
-    final price = isRent
-        ? property['deposit_amount'] ?? property['monthly_rent']
-        : property['sale_price'];
-    final imageUrl = property['cover_image_url'] as String?;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            textDirection: TextDirection.rtl,
-            children: <Widget>[
-              _DashboardPropertyImage(
-                imageUrl: imageUrl,
-                imageHeaders: imageHeaders,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        const Icon(Icons.chevron_left_rounded, size: 20),
-                      ],
-                    ),
-                    const SizedBox(height: 7),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 5,
-                      children: <Widget>[
-                        _StatusChip(
-                          label: _transactionLabel(transaction),
-                          color: isRent
-                              ? const Color(0xFF008A8F)
-                              : const Color(0xFFE19A1A),
-                        ),
-                        if (status.isNotEmpty)
-                          _StatusChip(
-                            label: _statusLabel(status),
-                            color: colors.primary,
-                            soft: true,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${_areaLabel(area)} • ${_propertyCode(property['code'])}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isRent
-                          ? 'ودیعه ${formatToman(price)}'
-                          : formatToman(price),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static String _transactionLabel(String value) => switch (value) {
-    'rent' => 'اجاره',
-    'partnership' => 'مشارکت',
-    _ => 'فروش',
-  };
-
-  static String _statusLabel(String value) => switch (value) {
-    'available' => 'موجود',
-    'reserved' => 'رزرو',
-    'sold' => 'فروخته‌شده',
-    'rented' => 'اجاره‌رفته',
-    _ => value,
-  };
-
-  static String _areaLabel(Object? value) {
-    final area = num.tryParse('$value');
-    if (area == null) return 'متراژ نامشخص';
-    final display = area % 1 == 0 ? area.toInt().toString() : '$area';
-    return '${persianDigits(display)} متر';
-  }
-
-  static String _propertyCode(Object? value) {
-    final code = '$value'.trim();
-    return code.isEmpty || code == 'null' ? 'کد ثبت نشده' : code;
-  }
-}
-
-final class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.label,
-    required this.color,
-    this.soft = false,
-  });
-
-  final String label;
-  final Color color;
-  final bool soft;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: soft ? color.withValues(alpha: .11) : color,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: soft ? color : Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    ),
-  );
-}
-
-final class _DashboardPropertyImage extends StatelessWidget {
-  const _DashboardPropertyImage({
-    required this.imageUrl,
-    required this.imageHeaders,
-  });
-
-  final String? imageUrl;
-  final Map<String, String>? imageHeaders;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 104,
-    height: 104,
-    child: ClipRRect(borderRadius: BorderRadius.circular(16), child: _image()),
-  );
-
-  Widget _image() {
-    final value = imageUrl?.trim();
-    if (value == null || value.isEmpty) return const _ImagePlaceholder();
-    final uri = Uri.tryParse(value);
-    final base = Uri.parse(AppConfig.apiBaseUrl);
-    final url = uri == null || !uri.hasScheme || uri.host.isEmpty
-        ? base.resolve(value.startsWith('/') ? value : '/$value').toString()
-        : value;
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      headers: imageHeaders,
-      errorBuilder: (_, _, _) => const _ImagePlaceholder(),
-    );
-  }
-}
-
-final class _ImagePlaceholder extends StatelessWidget {
-  const _ImagePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return ColoredBox(
-      color: colors.primary.withValues(alpha: .08),
-      child: Center(
-        child: Icon(Icons.home_work_outlined, color: colors.primary, size: 32),
-      ),
-    );
-  }
 }
 
 final class _RecentNotes extends StatelessWidget {

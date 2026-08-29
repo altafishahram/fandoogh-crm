@@ -31,6 +31,13 @@ flutter:
   generate: true
   uses-material-design: true
   fonts:
-    - family: Vazirmatn
+    - family: YekanBakh
       fonts:
-        - asset: assets/fonts/Vazirmatn-Regular.ttf
+        - asset: assets/fonts/YekanBakhFaNum-VF.ttf
+          weight: 100
+        - asset: assets/fonts/YekanBakhFaNum-VF.ttf
+          weight: 400
+        - asset: assets/fonts/YekanBakhFaNum-VF.ttf
+          weight: 700
+        - asset: assets/fonts/YekanBakhFaNum-VF.ttf
+          weight: 900

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Property\Services;
 
+use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Property\Contracts\PropertyRepositoryContract;
 use App\Application\Property\Data\ChangePropertyStatusData;
 use App\Application\Shared\Services\OptimisticLock;
@@ -24,11 +25,12 @@ final readonly class ChangePropertyStatusService
         private PropertyInvariantValidator $validator,
         private OptimisticLock $optimisticLock,
         private PropertyHistoryWriter $history,
+        private MatchingRebuildDispatcher $matching,
     ) {}
 
     public function execute(User $actor, Property $property, ChangePropertyStatusData $data): Property
     {
-        return DB::transaction(function () use ($actor, $property, $data): Property {
+        $updated = DB::transaction(function () use ($actor, $property, $data): Property {
             $locked = $this->properties->lock((int) $property->getKey());
             if ($data->expectedVersion !== null) {
                 $this->optimisticLock->assertVersion($locked, $data->expectedVersion);
@@ -51,6 +53,7 @@ final readonly class ChangePropertyStatusService
             $locked->closed_at = in_array($to, [PropertyStatus::Sold, PropertyStatus::Rented], true)
                 ? ($data->closedAt ?? CarbonImmutable::now()) : null;
             $locked->archived_at = $to === PropertyStatus::Archived ? CarbonImmutable::now() : null;
+            $locked->matching_eligible_at = now();
             $locked->lock_version = (int) $locked->lock_version + 1;
             $locked = $this->properties->save($locked);
             $action = match (true) {
@@ -62,6 +65,10 @@ final readonly class ChangePropertyStatusService
 
             return $locked;
         });
+
+        $this->matching->dispatchForAgency((int) $updated->agency_id);
+
+        return $updated;
     }
 
     private function validateTransition(

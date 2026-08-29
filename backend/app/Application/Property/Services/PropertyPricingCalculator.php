@@ -40,10 +40,34 @@ final class PropertyPricingCalculator
             throw new DomainConflictException('حداقل ودیعه نمی‌تواند از ودیعه اولیه بیشتر باشد.');
         }
 
-        $releasedDeposit = bcsub($deposit, $minimumDeposit, 2);
+        return $this->convertedRentAtDeposit($deposit, $rent, $minimumDeposit);
+    }
+
+    public function convertedRentAtDeposit(string $initialDeposit, string $initialRent, string $deposit): string
+    {
+        $initialDeposit = $this->numeric($initialDeposit);
+        $initialRent = $this->numeric($initialRent);
+        $deposit = $this->numeric($deposit);
+        $releasedDeposit = bcsub($initialDeposit, $deposit, 2);
         $converted = bcdiv(bcmul($releasedDeposit, self::RENT_PER_STEP, 2), self::DEPOSIT_STEP, 6);
 
-        return $this->roundHalfUp(bcadd($rent, $converted, 6));
+        return $this->roundHalfUp(bcadd($initialRent, $converted, 6));
+    }
+
+    public function convertedRentForDeposit(string $initialDeposit, string $initialRent, string $targetDeposit): string
+    {
+        $initialDeposit = $this->numeric($initialDeposit);
+        $initialRent = $this->numeric($initialRent);
+        $targetDeposit = $this->numeric($targetDeposit);
+
+        if (bccomp($targetDeposit, $initialDeposit, 6) > 0) {
+            throw new DomainConflictException('ودیعهٔ تبدیل‌شده نمی‌تواند از ودیعهٔ اولیه بیشتر باشد.');
+        }
+
+        $releasedDeposit = bcsub($initialDeposit, $targetDeposit, 6);
+        $converted = bcdiv(bcmul($releasedDeposit, self::RENT_PER_STEP, 6), self::DEPOSIT_STEP, 6);
+
+        return $this->roundHalfUp(bcadd($initialRent, $converted, 6));
     }
 
     /** @param numeric-string $value */

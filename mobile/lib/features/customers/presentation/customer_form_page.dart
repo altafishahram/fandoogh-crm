@@ -69,6 +69,10 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
     'telephone_line_count',
     'land_area',
     'building_area',
+    'land_area_min',
+    'land_area_max',
+    'building_area_min',
+    'building_area_max',
   };
   static const _integerNumericFields = <String>{
     'bedrooms',
@@ -408,13 +412,14 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
       _gap,
       _text('district', 'محلهٔ موردنظر'),
       _gap,
-      Row(
-        children: <Widget>[
-          Expanded(child: _number('area_min', 'متراژ از')),
-          const SizedBox(width: 8),
-          Expanded(child: _number('area_max', 'متراژ تا')),
-        ],
-      ),
+      if (!_isIndustrial)
+        Row(
+          children: <Widget>[
+            Expanded(child: _number('area_min', 'متراژ از', required: true)),
+            const SizedBox(width: 8),
+            Expanded(child: _number('area_max', 'متراژ تا', required: true)),
+          ],
+        ),
       _gap,
       if (_intent == 'buy') ...<Widget>[
         _number('bedrooms', 'حداقل تعداد اتاق', integer: true),
@@ -585,9 +590,13 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
           integer: true,
         ),
         _gap,
-        _text('land_area', 'متراژ زمین', groupedNumber: true),
+        _number('land_area_min', 'حداقل متراژ زمین', required: true),
         _gap,
-        _text('building_area', 'متراژ بنا', groupedNumber: true),
+        _number('land_area_max', 'حداکثر متراژ زمین', required: true),
+        _gap,
+        _number('building_area_min', 'حداقل متراژ بنا', required: true),
+        _gap,
+        _number('building_area_max', 'حداکثر متراژ بنا', required: true),
         const Divider(height: 28),
       ],
       Text('نوع سرویس', style: Theme.of(context).textTheme.titleSmall),
@@ -879,16 +888,29 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
         'telephone_line_count',
         item.data['telephone_line_count'],
       );
-      _c('land_area').text = _loadedValue('land_area', item.data['land_area']);
-      _c('building_area').text = _loadedValue(
-        'building_area',
-        item.data['building_area'],
+      final legacyLandArea = item.data['land_area'];
+      final legacyBuildingArea = item.data['building_area'];
+      _c('land_area_min').text = _loadedValue(
+        'land_area_min',
+        item.data['land_area_min'] ?? legacyLandArea,
+      );
+      _c('land_area_max').text = _loadedValue(
+        'land_area_max',
+        item.data['land_area_max'] ?? legacyLandArea,
+      );
+      _c('building_area_min').text = _loadedValue(
+        'building_area_min',
+        item.data['building_area_min'] ?? legacyBuildingArea,
+      );
+      _c('building_area_max').text = _loadedValue(
+        'building_area_max',
+        item.data['building_area_max'] ?? legacyBuildingArea,
       );
       _hasWater = item.data['has_water'] == true;
       _hasElectricity = item.data['has_electricity'] == true;
       _hasGas = item.data['has_gas'] == true;
     } catch (error) {
-      _error = apiFailureFrom(error).message;
+      _error = apiFailureFrom(error).displayMessage;
     }
     if (mounted) {
       setState(() => _loading = false);
@@ -910,17 +932,17 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
       _error = null;
     });
     final body = <String, Object?>{
-      'full_name': _v('full_name'),
+      'full_name': _raw('full_name'),
       'mobile': _v('mobile'),
       'phone': _empty('phone'),
       'preferred_contact_method': 'phone',
       'intent': _intent,
       'desired_property_type': _propertyType,
       'preferred_property_types': <String>[_propertyType],
-      'desired_city': _empty('city'),
-      'desired_district': _empty('district'),
-      'min_area_sqm': _empty('area_min'),
-      'max_area_sqm': _empty('area_max'),
+      'desired_city': _textOrNull('city'),
+      'desired_district': _textOrNull('district'),
+      'min_area_sqm': _isIndustrial ? null : _empty('area_min'),
+      'max_area_sqm': _isIndustrial ? null : _empty('area_max'),
       'min_bedrooms': _int('bedrooms'),
       'min_parking_spaces': _intent == 'rent' && _hasParking ? 1 : null,
       'has_parking': _hasParking,
@@ -952,20 +974,24 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
       'has_elevator': _intent == 'rent' && _hasElevator,
       'has_balcony': _intent == 'rent' && _hasBalcony,
       'building_type': _buildingType,
-      'structure_type': _empty('structure_type'),
+      'structure_type': _textOrNull('structure_type'),
       'has_water': _hasWater,
       'has_electricity': _hasElectricity,
       'has_gas': _hasGas,
       'telephone_line_count': _empty('telephone_line_count'),
-      'land_area': _empty('land_area'),
-      'building_area': _empty('building_area'),
-      'description': _empty('description'),
+      'land_area': null,
+      'building_area': null,
+      'land_area_min': _isIndustrial ? _empty('land_area_min') : null,
+      'land_area_max': _isIndustrial ? _empty('land_area_max') : null,
+      'building_area_min': _isIndustrial ? _empty('building_area_min') : null,
+      'building_area_max': _isIndustrial ? _empty('building_area_max') : null,
+      'description': _textOrNull('description'),
     };
     try {
       if (_editing) {
         if (_status != _original!.status) {
           body['status'] = _status;
-          body['reason'] = _empty('status_reason');
+          body['reason'] = _textOrNull('status_reason');
         }
         body['expected_version'] = _original!.lockVersion;
         await ref
@@ -984,7 +1010,7 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = apiFailureFrom(error).message;
+          _error = apiFailureFrom(error).displayMessage;
         });
       }
     }
@@ -1002,7 +1028,15 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
     );
   }
 
-  String _v(String key) => normalizeNumericText(_c(key).text.trim());
+  String _raw(String key) => _c(key).text.trim();
+
+  String _v(String key) => normalizeNumericText(_raw(key));
+
+  String? _textOrNull(String key) {
+    final value = _raw(key);
+    return value.isEmpty ? null : value;
+  }
+
   String? _empty(String key) => _v(key).isEmpty ? null : _v(key);
   int? _int(String key) => int.tryParse(_v(key));
 
@@ -1015,6 +1049,10 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
       'telephone_line_count',
       'land_area',
       'building_area',
+      'land_area_min',
+      'land_area_max',
+      'building_area_min',
+      'building_area_max',
     ]) {
       _c(key).clear();
     }

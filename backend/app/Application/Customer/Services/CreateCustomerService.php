@@ -6,6 +6,7 @@ namespace App\Application\Customer\Services;
 
 use App\Application\Customer\Contracts\CustomerRepositoryContract;
 use App\Application\Customer\Data\CreateCustomerData;
+use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Shared\Services\AgentAssignmentValidator;
 use App\Domain\Customer\Enums\CustomerHistoryAction;
 use App\Domain\Customer\Enums\CustomerStatus;
@@ -22,6 +23,7 @@ final readonly class CreateCustomerService
         private AgentAssignmentValidator $agents,
         private TenantContext $tenant,
         private CustomerHistoryWriter $history,
+        private MatchingRebuildDispatcher $matching,
     ) {}
 
     public function execute(User $actor, CreateCustomerData $data): Customer
@@ -42,9 +44,12 @@ final readonly class CreateCustomerService
             'status' => CustomerStatus::Active,
             'converted_property_id' => null,
             'lock_version' => 1,
+            'matching_eligible_at' => now(),
         ]);
 
         $this->history->write($customer, $actor, CustomerHistoryAction::Created);
+
+        $this->matching->dispatchForAgency((int) $customer->agency_id);
 
         return $customer;
     }

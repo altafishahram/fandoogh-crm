@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\CustomerHistoryController;
 use App\Http\Controllers\Api\V1\CustomerNoteController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\MatchNotificationController;
 use App\Http\Controllers\Api\V1\MobileAuthController;
 use App\Http\Controllers\Api\V1\OwnerController;
 use App\Http\Controllers\Api\V1\ProfileController;
@@ -73,6 +74,17 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 Route::get('/agents', [AgentPermissionController::class, 'index'])->name('agents.index');
                 Route::put('/agents/{agent}/permissions', [AgentPermissionController::class, 'update'])
                     ->name('agents.permissions.update');
+
+                Route::get('/match-notifications', [MatchNotificationController::class, 'index'])
+                    ->name('match-notifications.index');
+                Route::get('/match-notifications/unread-count', [MatchNotificationController::class, 'unreadCount'])
+                    ->name('match-notifications.unread-count');
+                Route::get('/match-notifications/{matchNotification}', [MatchNotificationController::class, 'show'])
+                    ->whereNumber('matchNotification')->name('match-notifications.show');
+                Route::put('/match-notifications/{matchNotification}/read', [MatchNotificationController::class, 'markRead'])
+                    ->whereNumber('matchNotification')->name('match-notifications.read');
+                Route::post('/match-notifications/{matchNotification}/read', [MatchNotificationController::class, 'markRead'])
+                    ->whereNumber('matchNotification')->name('match-notifications.read.store');
             });
         });
 });

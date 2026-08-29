@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Property\Services;
 
+use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Property\Contracts\PropertyRepositoryContract;
 use App\Application\Property\Data\UpdatePropertyData;
 use App\Application\Shared\Services\AgentAssignmentValidator;
@@ -27,11 +28,12 @@ final readonly class UpdatePropertyService
         private PropertyHistoryWriter $history,
         private PropertyPricingCalculator $pricing,
         private TenantContext $tenant,
+        private MatchingRebuildDispatcher $matching,
     ) {}
 
     public function execute(User $actor, Property $property, UpdatePropertyData $data): Property
     {
-        return DB::transaction(function () use ($actor, $property, $data): Property {
+        $updated = DB::transaction(function () use ($actor, $property, $data): Property {
             $locked = $this->properties->lock((int) $property->getKey());
             if ($data->expectedVersion !== null) {
                 $this->optimisticLock->assertVersion($locked, $data->expectedVersion);
@@ -70,6 +72,7 @@ final readonly class UpdatePropertyService
             $this->validator->commercial($merged);
             $before = $locked->getAttributes();
             $locked->fill($attributes);
+            $locked->matching_eligible_at = now();
             $locked->lock_version = (int) $locked->lock_version + 1;
             $locked = $this->properties->save($locked);
 
@@ -89,6 +92,10 @@ final readonly class UpdatePropertyService
 
             return $locked;
         });
+
+        $this->matching->dispatchForAgency((int) $updated->agency_id);
+
+        return $updated;
     }
 
     /** @param array<string, mixed> $before

@@ -30,6 +30,7 @@ void main() {
     expect(failure.statusCode, 422);
     expect(failure.requestId, 'request-123');
     expect(failure.details, contains('title'));
+    expect(failure.displayMessage, contains('عنوان ملک'));
   });
 
   test('maps connection errors without leaking transport details', () {

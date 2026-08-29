@@ -11,6 +11,7 @@ use App\Domain\Property\Enums\TransactionType;
 use App\Domain\Tenancy\Concerns\BelongsToAgency;
 use App\Domain\Tenancy\Exceptions\ImmutableTenantException;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Database\Factories\PropertyFactory;
 use DomainException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $created_by_user_id
  * @property CarbonImmutable|null $closed_at
  * @property CarbonImmutable|null $archived_at
+ * @property CarbonInterface|null $matching_eligible_at
  */
 class Property extends Model
 {
@@ -55,6 +57,7 @@ class Property extends Model
         'has_loan', 'is_exchangeable', 'has_pool', 'has_jacuzzi', 'has_sauna',
         'building_type', 'structure_type', 'has_water', 'has_electricity', 'has_gas',
         'telephone_line_count', 'land_area', 'building_area', 'can_aggregate', 'land_frontage',
+        'matching_eligible_at',
     ];
 
     protected static function booted(): void
@@ -127,6 +130,7 @@ class Property extends Model
             'can_aggregate' => 'boolean',
             'available_from' => 'immutable_date', 'closed_at' => 'immutable_datetime',
             'archived_at' => 'immutable_datetime',
+            'matching_eligible_at' => 'immutable_datetime',
         ];
     }
 }

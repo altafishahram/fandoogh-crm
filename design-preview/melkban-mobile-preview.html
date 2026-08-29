@@ -1,0 +1,1588 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4fbf9">
+  <title>پیش‌نمایش طراحی جدید ملک‌بان</title>
+  <style>
+    @font-face {
+      font-family: "YekanBakh";
+      src: url("../backend/public/fonts/YekanBakhFaNum-VF.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 100 950;
+      font-display: swap;
+    }
+
+    :root {
+      --bg: #f4fbf9;
+      --surface: #ffffff;
+      --surface-soft: #edf8f5;
+      --ink: #102d35;
+      --muted: #5c747a;
+      --line: #d8ebe7;
+      --primary: #0f766e;
+      --primary-deep: #115e59;
+      --teal-soft: #c9f2e9;
+      --blue: #0369a1;
+      --blue-soft: #dff1fc;
+      --orange: #b45309;
+      --orange-soft: #fff0d7;
+      --violet: #7557b7;
+      --violet-soft: #eee8ff;
+      --coral: #c2414f;
+      --coral-soft: #ffe6e8;
+      --shadow: 0 18px 55px rgba(20, 79, 77, .11);
+      --shadow-soft: 0 8px 24px rgba(20, 79, 77, .07);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { background: var(--bg); scroll-behavior: smooth; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 4%, rgba(20, 184, 166, .15), transparent 22rem),
+        radial-gradient(circle at 96% 32%, rgba(117, 87, 183, .11), transparent 20rem),
+        var(--bg);
+      font-family: "YekanBakh", Tahoma, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { border: 0; cursor: pointer; touch-action: manipulation; }
+    button:focus-visible, input:focus-visible { outline: 3px solid rgba(3, 105, 161, .38); outline-offset: 3px; }
+    .icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    .app-stage { width: min(100%, 1180px); margin: 0 auto; padding: 26px; }
+    .preview-note { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; color: var(--muted); font-size: 13px; }
+    .preview-note strong { color: var(--ink); font-weight: 800; }
+    .note-actions { display: flex; align-items: center; gap: 8px; }
+    .mini-action { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 14px; color: var(--primary-deep); background: rgba(255,255,255,.7); transition: transform .2s var(--ease), background .2s var(--ease); }
+    .mini-action:hover { transform: translateY(-2px); background: var(--surface); }
+
+    .phone {
+      position: relative;
+      width: min(100%, 440px);
+      min-height: 860px;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 10px solid #143e43;
+      border-radius: 42px;
+      background: var(--bg);
+      box-shadow: 0 28px 80px rgba(14, 56, 62, .24), 0 0 0 1px rgba(255,255,255,.8);
+    }
+    .phone::before { content: ""; position: absolute; z-index: 10; top: 0; left: 50%; width: 112px; height: 25px; border-radius: 0 0 18px 18px; background: #143e43; transform: translateX(-50%); }
+    .screen { position: relative; min-height: 840px; padding-bottom: 100px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 38px 22px 14px; }
+    .eyebrow { margin: 0 0 2px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 0; font-size: 23px; line-height: 1.25; letter-spacing: -.02em; }
+    h2 { margin-bottom: 0; font-size: 18px; line-height: 1.3; }
+    .avatar { display: grid; flex: 0 0 auto; place-items: center; width: 48px; height: 48px; border: 3px solid #fff; border-radius: 18px; color: #fff; background: linear-gradient(145deg, #0f766e, #17a897); box-shadow: 0 8px 18px rgba(15,118,110,.22); font-weight: 900; }
+    .notification { position: relative; display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 16px; color: var(--primary-deep); background: rgba(255,255,255,.76); }
+    .notification::after { content: ""; position: absolute; top: 10px; right: 11px; width: 7px; height: 7px; border: 2px solid var(--surface); border-radius: 50%; background: var(--coral); }
+
+    .hero { position: relative; margin: 4px 18px 16px; padding: 22px; overflow: hidden; border-radius: var(--radius-xl); color: #fff; background: linear-gradient(135deg, #0f766e 0%, #10958b 57%, #29b6a4 100%); box-shadow: 0 16px 30px rgba(15,118,110,.22); }
+    .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.13); pointer-events: none; }
+    .hero::before { width: 180px; height: 180px; left: -78px; bottom: -105px; }
+    .hero::after { width: 130px; height: 130px; right: -50px; top: -54px; }
+    .hero-content { position: relative; z-index: 1; display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+    .hero-label { margin-bottom: 5px; color: rgba(255,255,255,.78); font-size: 13px; }
+    .hero-title { max-width: 220px; margin-bottom: 8px; font-size: 23px; font-weight: 850; line-height: 1.35; }
+    .hero-copy { margin-bottom: 0; color: rgba(255,255,255,.88); font-size: 13px; }
+    .progress-ring { display: grid; flex: 0 0 auto; place-items: center; width: 92px; height: 92px; border-radius: 50%; background: conic-gradient(#fff 0 76%, rgba(255,255,255,.2) 76% 100%); }
+    .progress-ring::after { content: ""; position: absolute; width: 72px; height: 72px; border-radius: 50%; background: #119287; }
+    .progress-value { position: relative; z-index: 1; font-size: 19px; font-weight: 900; }
+
+    .section { padding: 0 18px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 22px 0 12px; }
+    .section-link { color: var(--blue); font-size: 13px; font-weight: 750; background: transparent; }
+    .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .metric { min-height: 104px; padding: 13px 11px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .metric-icon { display: grid; place-items: center; width: 31px; height: 31px; margin-bottom: 8px; border-radius: 11px; }
+    .metric:nth-child(1) .metric-icon { color: var(--primary-deep); background: var(--teal-soft); }
+    .metric:nth-child(2) .metric-icon { color: var(--violet); background: var(--violet-soft); }
+    .metric:nth-child(3) .metric-icon { color: var(--orange); background: var(--orange-soft); }
+    .metric b { display: block; margin-bottom: 1px; font-size: 20px; line-height: 1; }
+    .metric span { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .quick { display: flex; align-items: center; gap: 10px; min-height: 62px; padding: 10px 12px; border: 1px solid transparent; border-radius: 18px; text-align: right; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-soft); transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
+    .quick:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .quick.primary { color: #fff; background: var(--primary-deep); box-shadow: 0 9px 22px rgba(17,94,89,.2); }
+    .quick-icon { display: grid; flex: 0 0 auto; place-items: center; width: 38px; height: 38px; border-radius: 13px; color: var(--primary-deep); background: var(--teal-soft); }
+    .quick.primary .quick-icon { color: var(--primary-deep); background: #d8fff4; }
+    .quick strong { display: block; font-size: 13px; font-weight: 800; }
+    .quick small { display: block; margin-top: 1px; color: var(--muted); font-size: 11px; }
+    .quick.primary small { color: rgba(255,255,255,.74); }
+
+    .filters { display: flex; gap: 8px; overflow-x: auto; padding: 1px 0 3px; scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter { flex: 0 0 auto; min-height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px; color: var(--muted); background: var(--surface); font-size: 12px; font-weight: 750; }
+    .filter.active { border-color: var(--primary); color: #fff; background: var(--primary); }
+    .property-list { display: grid; gap: 10px; }
+    .property { display: grid; grid-template-columns: 72px 1fr; gap: 12px; padding: 11px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-soft); transition: transform .2s var(--ease), border-color .2s var(--ease); }
+    .property:hover { transform: translateY(-2px); border-color: rgba(15,118,110,.42); }
+    .property-image { position: relative; display: grid; place-items: center; min-height: 76px; overflow: hidden; border-radius: 15px; color: rgba(255,255,255,.9); background: linear-gradient(145deg, #95d5cb, #3a9c9a); }
+    .property:nth-child(2) .property-image { background: linear-gradient(145deg, #d4b8f4, #8067be); }
+    .property:nth-child(3) .property-image { background: linear-gradient(145deg, #f8cf8e, #d27b4e); }
+    .property-image .icon { width: 30px; height: 30px; opacity: .88; }
+    .property-body { min-width: 0; }
+    .property-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .property-title { overflow: hidden; margin-bottom: 0; font-size: 14px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+    .badge { flex: 0 0 auto; padding: 4px 8px; border-radius: 9px; font-size: 10px; font-weight: 850; }
+    .badge.green { color: var(--primary-deep); background: var(--teal-soft); }
+    .badge.violet { color: var(--violet); background: var(--violet-soft); }
+    .badge.orange { color: var(--orange); background: var(--orange-soft); }
+    .property-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 6px 0 3px; color: var(--muted); font-size: 11px; }
+    .property-price { color: var(--primary-deep); font-size: 13px; font-weight: 900; }
+    .property-price span { color: var(--muted); font-size: 10px; font-weight: 600; }
+
+    .app-page { min-height: 740px; padding: 34px 18px 26px; }
+    .app-page[hidden] { display: none; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .page-title { margin: 0; font-size: 25px; font-weight: 900; letter-spacing: -.025em; }
+    .page-subtitle { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+    .page-action { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 16px; color: #fff; background: var(--primary); box-shadow: 0 9px 22px rgba(15,118,110,.22); }
+    .search-row { display: grid; grid-template-columns: 1fr 48px; gap: 9px; margin-bottom: 13px; }
+    .search-box { position: relative; }
+    .search-box .icon { position: absolute; top: 50%; right: 14px; width: 20px; color: var(--muted); pointer-events: none; transform: translateY(-50%); }
+    .search-box input { width: 100%; min-height: 48px; padding: 0 44px 0 14px; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-soft); }
+    .filter-action { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 16px; color: var(--primary-deep); background: var(--surface); box-shadow: var(--shadow-soft); }
+    .list-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 10px; }
+    .list-heading h2 { font-size: 16px; }
+    .list-actions { display: flex; align-items: center; gap: 4px; }
+    .sort-button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 10px; border-radius: 12px; color: var(--muted); background: transparent; font-size: 11px; font-weight: 700; }
+    .sort-button .icon { width: 17px; height: 17px; }
+    .view-toggle { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; color: var(--primary-deep); background: var(--surface); }
+    .view-toggle .icon { width: 19px; height: 19px; }
+    .view-toggle .visual-view-icon { display: none; }
+    .view-toggle.app-mode .app-view-icon { display: none; }
+    .view-toggle.app-mode .visual-view-icon { display: block; }
+    .full-property-list { display: grid; gap: 11px; }
+    .full-property-card { overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .property-cover { position: relative; display: flex; align-items: flex-end; min-height: 118px; padding: 12px; color: #fff; background: linear-gradient(135deg, #3ca79f, #196f75); }
+    .full-property-card:nth-child(2) .property-cover { background: linear-gradient(135deg, #8872c6, #5a478d); }
+    .full-property-card:nth-child(3) .property-cover { background: linear-gradient(135deg, #dd9858, #a95d40); }
+    .property-cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 28%, rgba(8,32,37,.38)); }
+    .cover-shape { position: absolute; top: 18px; left: 20px; width: 92px; height: 72px; border: 2px solid rgba(255,255,255,.38); border-radius: 22px 22px 7px 7px; transform: rotate(-5deg); }
+    .cover-shape::before { content: ""; position: absolute; right: 18px; bottom: 0; width: 26px; height: 37px; border: 2px solid rgba(255,255,255,.38); border-bottom: 0; border-radius: 8px 8px 0 0; }
+    .cover-status { position: relative; z-index: 1; padding: 5px 9px; border: 1px solid rgba(255,255,255,.28); border-radius: 10px; background: rgba(12,54,58,.36); backdrop-filter: blur(8px); font-size: 10px; font-weight: 800; }
+    .favorite { position: absolute; z-index: 2; top: 10px; right: 10px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; color: #fff; background: rgba(12,54,58,.31); backdrop-filter: blur(8px); }
+    .property-detail { padding: 13px 14px 14px; }
+    .property-detail h3 { margin-bottom: 5px; font-size: 15px; font-weight: 900; }
+    .detail-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--muted); font-size: 11px; }
+    .detail-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .detail-price { color: var(--primary-deep); font-size: 14px; font-weight: 900; }
+    .detail-button { min-height: 40px; padding: 0 13px; border-radius: 12px; color: var(--blue); background: var(--blue-soft); font-size: 11px; font-weight: 850; }
+
+    .app-property-list { display: grid; gap: 11px; }
+    .app-property-card { display: grid; grid-template-columns: minmax(0, 1fr) 144px; gap: 10px; width: 100%; padding: 12px; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; color: var(--ink); text-align: right; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .app-card-content { min-width: 0; padding-inline-end: 2px; }
+    .app-card-title { display: -webkit-box; min-height: 42px; margin: 0 0 12px; overflow: hidden; font-size: 16px; font-weight: 900; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .app-card-line { display: grid; grid-template-columns: 18px 1fr; align-items: center; gap: 5px; min-height: 28px; padding: 4px 0 5px; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .app-card-line:last-child { border-bottom: 0; }
+    .app-card-line .icon { width: 16px; height: 16px; color: var(--primary); }
+    .app-card-line strong { font-weight: 900; }
+    .app-card-image { position: relative; display: grid; place-items: center; width: 144px; min-height: 144px; overflow: hidden; border-radius: 16px; color: rgba(255,255,255,.78); background: linear-gradient(180deg, rgba(15,118,110,.16), rgba(15,118,110,.48)); }
+    .app-card-image .building-icon { width: 42px; height: 42px; }
+    .app-card-badge { position: absolute; top: 8px; left: 8px; padding: 5px 9px; border-radius: 8px; color: #fff; font-size: 11px; font-weight: 900; }
+    .app-card-badge.sale { background: #c94a4a; }
+    .app-card-badge.rent { background: #6f9a73; }
+    @media (max-width: 380px) {
+      .app-property-card { grid-template-columns: minmax(0, 1fr) 116px; }
+      .app-card-image { width: 116px; }
+      .app-card-line { font-size: 11px; }
+    }
+
+    .customer-summary { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; margin: 14px 0 18px; }
+    .summary-tile { min-height: 76px; padding: 11px; border: 1px solid transparent; border-radius: 17px; }
+    .summary-tile b { display: block; font-size: 20px; line-height: 1.1; }
+    .summary-tile span { display: block; margin-top: 5px; font-size: 10px; font-weight: 700; }
+    .summary-tile:nth-child(1) { color: var(--primary-deep); border-color: #aee6da; background: var(--teal-soft); }
+    .summary-tile:nth-child(2) { color: var(--violet); border-color: #ddd0ff; background: var(--violet-soft); }
+    .summary-tile:nth-child(3) { color: var(--orange); border-color: #f4d6a3; background: var(--orange-soft); }
+    .customer-list { display: grid; gap: 10px; }
+    .customer-card { padding: 13px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .customer-main { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 10px; }
+    .customer-avatar { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 16px; color: var(--primary-deep); background: var(--teal-soft); font-size: 15px; font-weight: 900; }
+    .customer-card:nth-child(2) .customer-avatar { color: var(--violet); background: var(--violet-soft); }
+    .customer-card:nth-child(3) .customer-avatar { color: var(--orange); background: var(--orange-soft); }
+    .customer-name { margin: 0; font-size: 14px; font-weight: 900; }
+    .customer-need { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+    .priority { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 10px; font-size: 9px; font-weight: 850; }
+    .priority::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .priority.hot { color: var(--coral); background: var(--coral-soft); }
+    .priority.warm { color: var(--orange); background: var(--orange-soft); }
+    .priority.new { color: var(--blue); background: var(--blue-soft); }
+    .priority.active { color: var(--primary-deep); background: var(--teal-soft); }
+    .need-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 11px 0; }
+    .need-tag { padding: 5px 8px; border-radius: 9px; color: var(--muted); background: var(--surface-soft); font-size: 10px; font-weight: 700; }
+    .customer-next { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .next-copy { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+    .next-copy .icon { width: 17px; height: 17px; color: var(--primary); }
+    .contact-actions { display: flex; gap: 6px; }
+    .contact-button { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: var(--primary-deep); background: var(--teal-soft); }
+    .contact-button.secondary { color: var(--blue); background: var(--blue-soft); }
+    .empty-result { margin-top: 12px; padding: 26px 18px; border: 1px dashed #b8d9d3; border-radius: 20px; text-align: center; background: rgba(255,255,255,.7); }
+    .empty-result .empty-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 17px; color: var(--primary); background: var(--teal-soft); }
+    .empty-result strong { display: block; font-size: 14px; font-weight: 900; }
+    .empty-result p { margin: 4px 0 12px; color: var(--muted); font-size: 11px; }
+    .empty-result button { min-height: 42px; padding: 0 14px; border-radius: 12px; color: var(--primary-deep); background: var(--teal-soft); font-size: 11px; font-weight: 850; }
+
+    .account-hero { position: relative; margin-bottom: 12px; padding: 20px 16px 16px; overflow: hidden; border-radius: 24px; color: #fff; text-align: center; background: linear-gradient(145deg, #0f766e, #168f86 58%, #45b7aa); box-shadow: 0 14px 30px rgba(15,118,110,.2); }
+    .account-hero::before, .account-hero::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.1); pointer-events: none; }
+    .account-hero::before { top: -58px; left: -34px; width: 150px; height: 150px; }
+    .account-hero::after { right: -56px; bottom: -82px; width: 180px; height: 180px; }
+    .account-avatar { position: relative; z-index: 1; display: grid; place-items: center; width: 76px; height: 76px; margin: 0 auto 10px; border: 3px solid rgba(255,255,255,.78); border-radius: 25px; color: var(--primary-deep); background: #e4fff8; box-shadow: 0 9px 20px rgba(6,66,63,.2); font-size: 26px; font-weight: 950; }
+    .account-hero h2 { position: relative; z-index: 1; margin: 0; color: #fff; font-size: 20px; font-weight: 900; }
+    .account-email { position: relative; z-index: 1; margin: 3px 0 8px; color: rgba(255,255,255,.78); font-size: 11px; }
+    .account-role { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border: 1px solid rgba(255,255,255,.25); border-radius: 10px; color: #fff; background: rgba(7,74,70,.27); font-size: 10px; font-weight: 850; backdrop-filter: blur(8px); }
+    .account-role::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #c8fff3; }
+    .account-phone { position: relative; z-index: 1; margin: 10px 0 0; color: rgba(255,255,255,.9); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .account-agency { display: grid; grid-template-columns: 44px 1fr; align-items: center; gap: 10px; margin-bottom: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .agency-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: var(--violet); background: var(--violet-soft); }
+    .agency-icon .icon { width: 20px; height: 20px; }
+    .account-agency strong { display: block; font-size: 13px; font-weight: 900; }
+    .account-agency small { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+    .account-menu { overflow: hidden; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .account-menu-button { display: grid; grid-template-columns: 40px 1fr 22px; align-items: center; gap: 10px; width: 100%; min-height: 64px; padding: 10px 12px; color: var(--ink); text-align: right; background: transparent; }
+    .account-menu-button + .account-menu-button { border-top: 1px solid var(--line); }
+    .account-menu-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; color: var(--primary-deep); background: var(--teal-soft); }
+    .account-menu-button:nth-child(2) .account-menu-icon { color: var(--blue); background: var(--blue-soft); }
+    .account-menu-icon .icon, .menu-chevron { width: 18px; height: 18px; }
+    .account-menu-copy strong { display: block; font-size: 12px; font-weight: 850; }
+    .account-menu-copy small { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
+    .menu-chevron { color: var(--muted); }
+    .sync-card { display: grid; grid-template-columns: 42px 1fr 44px; align-items: center; gap: 10px; margin-bottom: 12px; padding: 12px; border: 1px solid #f2d19a; border-radius: 20px; background: var(--orange-soft); }
+    .sync-card > .icon { width: 24px; height: 24px; color: var(--orange); }
+    .sync-card strong { display: block; color: #7c3f0a; font-size: 12px; }
+    .sync-card small { display: block; margin-top: 2px; color: #85552e; font-size: 9px; }
+    .sync-action { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; color: var(--orange); background: rgba(255,255,255,.65); }
+    .account-danger { display: grid; gap: 8px; }
+    .logout-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; border: 1px solid #efbdc3; border-radius: 14px; color: var(--coral); background: var(--surface); font-size: 11px; font-weight: 900; }
+    .logout-button.all { border-color: transparent; color: var(--muted); background: transparent; }
+    .logout-button .icon { width: 18px; height: 18px; }
+    .brand-signature { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 21px auto 2px; color: var(--muted); }
+    .brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; color: #fff; background: var(--primary); font-size: 16px; font-weight: 950; }
+    .brand-signature strong { display: block; color: var(--ink); font-size: 12px; font-weight: 900; }
+    .brand-signature small { display: block; font-size: 9px; }
+    .profile-modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+    .profile-modal-cancel, .profile-modal-submit { min-height: 48px; border-radius: 14px; font-size: 11px; font-weight: 900; }
+    .profile-modal-cancel { color: var(--muted); background: var(--surface-soft); }
+    .profile-modal-submit { color: #fff; background: var(--primary); }
+    .password-help { margin: -5px 0 12px; color: var(--muted); font-size: 9px; line-height: 1.7; }
+
+    .report-header-mark { display: grid; flex: 0 0 auto; place-items: center; width: 48px; height: 48px; border-radius: 16px; color: var(--violet); background: var(--violet-soft); }
+    .report-filter-card { margin-bottom: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .report-filter-title { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; font-size: 13px; font-weight: 900; }
+    .report-filter-title .icon { width: 18px; height: 18px; color: var(--primary); }
+    .report-date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .report-date { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; min-height: 56px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); text-align: right; background: var(--surface-soft); }
+    .report-date-copy { min-width: 0; }
+    .report-date small { display: block; color: var(--muted); font-size: 10px; }
+    .report-date strong { display: block; margin-top: 1px; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .report-date .icon { flex: 0 0 auto; width: 18px; height: 18px; color: var(--primary); }
+    .report-run { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-top: 10px; border-radius: 14px; color: #fff; background: var(--primary); box-shadow: 0 8px 18px rgba(15,118,110,.18); font-size: 12px; font-weight: 900; }
+    .report-run .icon { width: 18px; height: 18px; }
+    .report-run:disabled { cursor: wait; opacity: .58; box-shadow: none; }
+    .report-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
+    .report-metric { position: relative; min-height: 112px; padding: 14px; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .report-metric::after { content: ""; position: absolute; left: -18px; bottom: -24px; width: 82px; height: 82px; border-radius: 50%; background: var(--teal-soft); opacity: .55; }
+    .report-metric.secondary::after { background: var(--blue-soft); }
+    .report-metric-icon { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 9px; border-radius: 11px; color: var(--primary-deep); background: var(--teal-soft); }
+    .report-metric.secondary .report-metric-icon { color: var(--blue); background: var(--blue-soft); }
+    .report-metric-icon .icon { width: 19px; height: 19px; }
+    .report-metric b { position: relative; z-index: 1; display: block; font-size: 23px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .report-metric span { position: relative; z-index: 1; display: block; margin-top: 4px; color: var(--muted); font-size: 11px; font-weight: 750; }
+    .report-section { margin-top: 11px; padding: 15px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .report-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+    .report-section-head h2 { font-size: 14px; font-weight: 900; }
+    .report-section-head span { flex: 0 0 auto; padding: 4px 8px; border-radius: 9px; color: var(--muted); background: var(--surface-soft); font-size: 9px; font-weight: 750; }
+    .report-bars { display: grid; gap: 12px; }
+    .report-bar-row { display: grid; gap: 5px; }
+    .report-bar-copy { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }
+    .report-bar-copy strong { color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .report-bar-track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--surface-soft); }
+    .report-bar-fill { width: var(--bar); height: 100%; border-radius: inherit; background: var(--primary); }
+    .report-bar-row:nth-child(2) .report-bar-fill { background: var(--blue); }
+    .report-bar-row:nth-child(3) .report-bar-fill { background: var(--violet); }
+    .report-bar-row:nth-child(4) .report-bar-fill { background: var(--orange); }
+    .report-bar-row:nth-child(5) .report-bar-fill { background: var(--coral); }
+    @media (max-width: 360px) {
+      .report-date-grid { grid-template-columns: 1fr; }
+      .report-date { min-height: 52px; }
+    }
+
+    .record-form-page { min-height: 740px; padding: 34px 18px 28px; }
+    .record-form-toolbar { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .record-form-toolbar h1 { margin: 0; text-align: center; font-size: 18px; font-weight: 900; }
+    .record-form-toolbar p { margin: 1px 0 0; color: var(--muted); text-align: center; font-size: 10px; }
+    .record-form-toolbar-mark, .record-form-close { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 15px; color: var(--primary-deep); background: var(--surface); }
+    .form-flow { margin-bottom: 14px; padding: 12px 9px 10px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .form-stepper { display: grid; grid-template-columns: repeat(var(--step-count), minmax(0, 1fr)); gap: 3px; }
+    .flow-step { display: grid; justify-items: center; align-content: start; min-width: 0; min-height: 58px; padding: 2px; color: var(--muted); background: transparent; }
+    .flow-step-number { display: grid; place-items: center; width: 28px; height: 28px; margin-bottom: 4px; border-radius: 50%; color: var(--muted); background: var(--surface-soft); font-size: 11px; font-weight: 900; }
+    .flow-step span:last-child { width: 100%; overflow: hidden; font-size: 9px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .flow-step.active { color: var(--primary-deep); }
+    .flow-step.active .flow-step-number { color: #fff; background: var(--primary); box-shadow: 0 5px 12px rgba(15,118,110,.2); }
+    .flow-step.done .flow-step-number { color: #fff; background: #5eb8ad; }
+    .form-progress-track { height: 4px; margin: 8px 5px 0; overflow: hidden; border-radius: 999px; background: var(--surface-soft); }
+    .form-progress-value { width: var(--progress); height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), #33b7a8); transition: width .22s var(--ease); }
+    .form-step-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 2px 10px; }
+    .form-step-caption h2 { font-size: 16px; font-weight: 900; }
+    .form-step-caption span { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+    .form-card { padding: 15px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .form-card + .form-card { margin-top: 11px; }
+    .form-card-title { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; font-size: 13px; font-weight: 900; }
+    .form-card-title .icon { width: 18px; height: 18px; color: var(--primary); }
+    .record-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 9px; }
+    .conditional-grid { display: contents; }
+    .record-grid > .span-2 { grid-column: 1 / -1; }
+    .record-field { display: grid; min-width: 0; gap: 5px; }
+    .record-field.span-2 { grid-column: 1 / -1; }
+    .record-field > span, .choice-label { color: var(--ink); font-size: 11px; font-weight: 800; }
+    .required-mark { color: var(--coral); }
+    .record-field input, .record-field select, .record-field textarea { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; outline: 0; color: var(--ink); background: #fbfefd; font-size: 16px; transition: border-color .18s var(--ease), box-shadow .18s var(--ease); }
+    .record-field textarea { min-height: 88px; resize: vertical; }
+    .record-field input:focus, .record-field select:focus, .record-field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15,118,110,.12); }
+    .field-hint { color: var(--muted); font-size: 9px; line-height: 1.6; }
+    .form-switches { display: grid; gap: 8px; }
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); cursor: pointer; }
+    .switch-copy { min-width: 0; }
+    .switch-copy strong { display: block; font-size: 11px; font-weight: 850; }
+    .switch-copy small { display: block; margin-top: 1px; color: var(--muted); font-size: 9px; }
+    .switch-row input { position: relative; flex: 0 0 auto; width: 46px; height: 26px; margin: 0; appearance: none; border-radius: 999px; background: #bdd1cd; cursor: pointer; transition: background .18s var(--ease); }
+    .switch-row input::after { content: ""; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(16,45,53,.2); transition: transform .18s var(--ease); }
+    .switch-row input:checked { background: var(--primary); }
+    .switch-row input:checked::after { transform: translateX(-20px); }
+    .choice-group { display: grid; gap: 7px; }
+    .choice-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+    .choice-chip { position: relative; cursor: pointer; }
+    .choice-chip input { position: absolute; opacity: 0; pointer-events: none; }
+    .choice-chip span { display: flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 13px; color: var(--muted); background: var(--surface); font-size: 10px; font-weight: 800; }
+    .choice-chip input:checked + span { border-color: var(--primary); color: var(--primary-deep); background: var(--teal-soft); }
+    .choice-chip input:focus-visible + span { outline: 3px solid rgba(3,105,161,.35); outline-offset: 2px; }
+    .form-section-note { display: flex; align-items: flex-start; gap: 9px; margin-top: 11px; padding: 11px; border-radius: 15px; color: var(--muted); background: var(--blue-soft); font-size: 10px; }
+    .form-section-note .icon { flex: 0 0 auto; width: 18px; height: 18px; color: var(--blue); }
+    .image-picker { display: grid; place-items: center; min-height: 112px; padding: 15px; border: 1px dashed #9dcfc6; border-radius: 17px; color: var(--primary-deep); text-align: center; background: var(--surface-soft); }
+    .image-picker .icon { width: 30px; height: 30px; margin-bottom: 6px; }
+    .image-picker strong { display: block; font-size: 12px; }
+    .image-picker small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .form-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 14px; }
+    .form-next, .form-prev { min-height: 48px; padding: 0 15px; border-radius: 14px; font-size: 11px; font-weight: 900; }
+    .form-next { display: flex; align-items: center; justify-content: center; gap: 7px; color: #fff; background: var(--primary); box-shadow: 0 8px 18px rgba(15,118,110,.18); }
+    .form-next .icon { width: 18px; height: 18px; }
+    .form-prev { color: var(--muted); background: var(--surface-soft); }
+    @media (max-width: 360px) {
+      .record-grid { grid-template-columns: 1fr; }
+      .record-grid > .span-2, .record-field.span-2 { grid-column: auto; }
+      .flow-step span:last-child { font-size: 8px; }
+    }
+
+    .detail-page { min-height: 740px; padding: 34px 18px 28px; }
+    .detail-toolbar { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .detail-toolbar h1 { overflow: hidden; margin: 0; text-align: center; font-size: 17px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+    .toolbar-button { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 15px; color: var(--primary-deep); background: var(--surface); }
+    .property-detail-visual { position: relative; min-height: 210px; margin-bottom: 14px; overflow: hidden; border-radius: 25px; color: #fff; background: linear-gradient(145deg, #5abdb2, #176b72); box-shadow: 0 14px 30px rgba(23,107,114,.2); }
+    .property-detail-visual::before { content: ""; position: absolute; top: 42px; left: 50%; width: 190px; height: 120px; border: 3px solid rgba(255,255,255,.38); border-radius: 40px 40px 10px 10px; transform: translateX(-50%); }
+    .property-detail-visual::after { content: ""; position: absolute; right: 50%; bottom: 0; width: 52px; height: 76px; border: 3px solid rgba(255,255,255,.38); border-bottom: 0; border-radius: 14px 14px 0 0; transform: translateX(26px); }
+    .visual-label { position: absolute; z-index: 2; top: 14px; right: 14px; padding: 6px 11px; border: 1px solid rgba(255,255,255,.3); border-radius: 11px; background: rgba(11,62,66,.36); backdrop-filter: blur(8px); font-size: 11px; font-weight: 900; }
+    .visual-title { position: absolute; z-index: 2; right: 15px; bottom: 14px; left: 15px; }
+    .visual-title h2 { margin-bottom: 2px; color: #fff; font-size: 18px; }
+    .visual-title p { margin: 0; color: rgba(255,255,255,.8); font-size: 11px; }
+    .detail-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(82px, 1fr); gap: 6px; margin-bottom: 13px; overflow-x: auto; padding: 3px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); scrollbar-width: none; }
+    .detail-tabs::-webkit-scrollbar { display: none; }
+    .detail-tab { min-height: 44px; padding: 0 10px; border-radius: 12px; color: var(--muted); background: transparent; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .detail-tab.active { color: #fff; background: var(--primary); }
+    .detail-panel { display: grid; gap: 11px; }
+    .info-card { padding: 15px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-soft); }
+    .info-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .info-card-head h2 { font-size: 15px; }
+    .status-chip { padding: 5px 9px; border-radius: 9px; color: var(--primary-deep); background: var(--teal-soft); font-size: 10px; font-weight: 850; }
+    .info-list { display: grid; }
+    .info-row { display: grid; grid-template-columns: minmax(90px, 40%) 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .info-row:last-child { border-bottom: 0; }
+    .info-label { color: var(--muted); }
+    .info-value { color: var(--ink); font-weight: 750; text-align: left; }
+    .feature-list { display: flex; flex-wrap: wrap; gap: 7px; }
+    .feature-chip { padding: 7px 10px; border-radius: 10px; color: var(--primary-deep); background: var(--surface-soft); font-size: 10px; font-weight: 750; }
+    .owner-card { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; }
+    .owner-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: var(--violet); background: var(--violet-soft); font-weight: 900; }
+    .owner-name { margin: 0; font-size: 13px; font-weight: 900; }
+    .owner-contact { margin: 2px 0 0; color: var(--muted); font-size: 10px; }
+    .small-contact { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; color: var(--primary-deep); background: var(--teal-soft); }
+    .detail-empty { padding: 34px 18px; border: 1px dashed #b8d9d3; border-radius: 20px; text-align: center; color: var(--muted); background: rgba(255,255,255,.68); font-size: 12px; }
+    .detail-empty .empty-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 17px; color: var(--primary); background: var(--teal-soft); }
+    .customer-profile { padding: 17px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(135deg, #ffffff, #edf9f6); box-shadow: var(--shadow-soft); }
+    .profile-main { display: grid; grid-template-columns: 58px 1fr auto; align-items: center; gap: 11px; }
+    .profile-mark { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 19px; color: var(--primary-deep); background: var(--teal-soft); font-size: 17px; font-weight: 900; }
+    .profile-main h2 { margin-bottom: 2px; font-size: 17px; }
+    .profile-main p { margin: 0; color: var(--muted); font-size: 11px; }
+    .profile-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+    .profile-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 13px; }
+    .profile-action { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 46px; border-radius: 14px; color: var(--primary-deep); background: var(--teal-soft); font-size: 11px; font-weight: 850; }
+    .profile-action.secondary { color: var(--blue); background: var(--blue-soft); }
+    .profile-action .icon { width: 18px; height: 18px; }
+    .customer-detail-link { min-height: 40px; padding: 0 11px; border-radius: 12px; color: var(--violet); background: var(--violet-soft); font-size: 10px; font-weight: 850; }
+
+    .bottom-nav { position: absolute; z-index: 5; right: 12px; bottom: 12px; left: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 8px 5px calc(8px + env(safe-area-inset-bottom)); border: 1px solid rgba(216,235,231,.9); border-radius: 24px; background: rgba(255,255,255,.91); box-shadow: 0 12px 28px rgba(14, 56, 62, .13); backdrop-filter: blur(16px); }
+    .nav-item { display: grid; place-items: center; min-height: 58px; gap: 3px; border-radius: 17px; color: var(--muted); background: transparent; font-size: 10px; font-weight: 700; transition: color .2s var(--ease), background .2s var(--ease); }
+    .nav-item.active { color: var(--primary-deep); background: var(--teal-soft); }
+    .nav-item .icon { width: 21px; height: 21px; }
+
+    .toast { position: fixed; z-index: 20; right: 50%; bottom: 24px; width: min(calc(100% - 34px), 390px); padding: 13px 16px; border-radius: 16px; color: #fff; background: #143e43; box-shadow: 0 12px 30px rgba(14,56,62,.24); opacity: 0; pointer-events: none; transform: translate(50%, 18px); transition: opacity .24s var(--ease), transform .24s var(--ease); }
+    .toast.show { opacity: 1; transform: translate(50%, 0); }
+    .modal-backdrop { position: fixed; z-index: 15; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(16,45,53,.42); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal { width: min(100%, 390px); padding: 22px; border: 1px solid var(--line); border-radius: 25px; background: var(--surface); box-shadow: var(--shadow); transform: translateY(14px) scale(.98); transition: transform .2s var(--ease); }
+    .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+    .close { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: var(--muted); background: var(--surface-soft); }
+    .field { display: grid; gap: 6px; margin-bottom: 14px; }
+    .field label { color: var(--ink); font-size: 13px; font-weight: 750; }
+    .field input { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); background: #fbfefd; }
+    .submit { width: 100%; min-height: 50px; border-radius: 15px; color: #fff; background: var(--primary); font-weight: 850; }
+
+    @media (min-width: 760px) {
+      .app-stage { padding-top: 40px; }
+      .phone { width: 440px; }
+    }
+    @media (max-width: 500px) {
+      .app-stage { padding: 0; }
+      .preview-note { padding: 12px 16px 0; }
+      .phone { min-height: 100vh; border-width: 0; border-radius: 0; box-shadow: none; }
+      .phone::before { display: none; }
+      .screen { min-height: 100vh; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-stage">
+    <div class="preview-note">
+      <div><strong>پیش‌نمایش مسیر جدید ملک‌بان</strong><br>نمونهٔ مستقل برای بررسی ظاهر و تجربه، بدون اتصال به API</div>
+      <div class="note-actions">
+        <button class="mini-action" id="focusDemo" type="button" aria-label="نمایش پیام راهنما">راهنما</button>
+      </div>
+    </div>
+
+    <main class="phone" aria-label="پروتوتایپ اپلیکیشن ملک‌بان">
+      <div class="screen">
+        <header class="topbar home-view">
+          <div>
+            <p class="eyebrow">شنبه، ۲۸ شهریور</p>
+            <h1>سلام نسترن <span aria-hidden="true">!</span></h1>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="notification" type="button" aria-label="اعلان‌ها"><svg class="icon" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button>
+            <div class="avatar" aria-label="پروفایل نسترن">ن</div>
+          </div>
+        </header>
+
+        <section class="hero home-view" aria-labelledby="hero-title">
+          <div class="hero-content">
+            <div>
+              <div class="hero-label">نمای امروز شما</div>
+              <div id="hero-title" class="hero-title">آرام و منظم، یک قدم جلوتر از بازار</div>
+              <p class="hero-copy">۳ کار مهم برای امروز باقی مانده</p>
+            </div>
+            <div class="progress-ring" aria-label="۷۶ درصد کارهای امروز انجام شده"><span class="progress-value">۷۶٪</span></div>
+          </div>
+        </section>
+
+        <section class="section home-view" aria-labelledby="metrics-title">
+          <div class="section-head"><h2 id="metrics-title">نمای کلی</h2><button class="section-link" type="button" data-toast="گزارش کامل در نسخهٔ بعدی باز می‌شود">جزئیات</button></div>
+          <div class="metric-grid">
+            <div class="metric"><div class="metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M5 10v10h14V10M9 20v-6h6v6"/></svg></div><b>۲۴</b><span>ملک فعال</span></div>
+            <div class="metric"><div class="metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><b>۱۲</b><span>مشتری جدید</span></div>
+            <div class="metric"><div class="metric-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12h18M12 3a9 9 0 1 0 9 9M12 3v9h9"/></svg></div><b>۸</b><span>پیگیری امروز</span></div>
+          </div>
+        </section>
+
+        <section class="section home-view" aria-labelledby="quick-title">
+          <div class="section-head"><h2 id="quick-title">شروع سریع</h2></div>
+          <div class="quick-actions">
+            <button class="quick primary" id="newProperty" type="button"><span class="quick-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span><strong>ثبت ملک جدید</strong><small>کمتر از ۲ دقیقه</small></span></button>
+            <button class="quick" type="button" data-go-view="customers"><span class="quick-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6"/></svg></span><span><strong>مشتری‌ها</strong><small>پیگیری‌های امروز</small></span></button>
+          </div>
+        </section>
+
+        <section class="section home-view" aria-labelledby="properties-title">
+          <div class="section-head"><h2 id="properties-title">ملک‌های اخیر</h2><button class="section-link" type="button" data-go-view="properties">مشاهده همه</button></div>
+          <div class="filters" role="group" aria-label="فیلتر ملک‌ها" data-list="propertyList">
+            <button class="filter active" data-filter="all" type="button">همه</button>
+            <button class="filter" data-filter="follow" type="button">نیازمند پیگیری</button>
+          </div>
+          <div class="property-list" id="propertyList">
+            <article class="property" data-kind="follow">
+              <div class="property-image" aria-label="تصویر نمونهٔ ملک"><svg class="icon" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M5 10v10h14V10M9 20v-6h6v6"/></svg></div>
+              <div class="property-body"><div class="property-top"><h3 class="property-title">آپارتمان دوخوابهٔ نیاوران</h3><span class="badge green">پیگیری</span></div><div class="property-meta"><span>۱۲۰ متر</span><span>پارکینگ</span></div><div class="property-price">۸٫۴ میلیارد <span>تومان</span></div></div>
+            </article>
+            <article class="property">
+              <div class="property-image" aria-label="تصویر نمونهٔ ملک"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/></svg></div>
+              <div class="property-body"><div class="property-top"><h3 class="property-title">خانهٔ حیاط‌دار در فرمانیه</h3><span class="badge violet">بازدید</span></div><div class="property-meta"><span>۲۸۰ متر</span><span>۴ خواب</span></div><div class="property-price">۲۲ میلیارد <span>تومان</span></div></div>
+            </article>
+            <article class="property" data-kind="follow">
+              <div class="property-image" aria-label="تصویر نمونهٔ ملک"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/></svg></div>
+              <div class="property-body"><div class="property-top"><h3 class="property-title">دفتر کار مدرن در ونک</h3><span class="badge orange">جدید</span></div><div class="property-meta"><span>۹۰ متر</span><span>آسانسور</span></div><div class="property-price">۴۵ میلیون <span>اجاره</span></div></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="app-page" id="propertiesPage" aria-labelledby="propertiesPageTitle" hidden>
+          <header class="page-header">
+            <div><h1 class="page-title" id="propertiesPageTitle">املاک</h1><p class="page-subtitle">۲۴ ملک فعال در فایل شما</p></div>
+            <button class="page-action" type="button" data-open-property aria-label="ثبت ملک جدید"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          </header>
+
+          <div class="search-row">
+            <label class="search-box"><span class="sr-only" hidden>جست‌وجوی ملک</span><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="propertySearch" type="search" placeholder="نام، محله یا کد ملک" aria-label="جست‌وجوی ملک"></label>
+            <button class="filter-action" type="button" aria-label="فیلترهای پیشرفته" data-toast="فیلترهای پیشرفته در مرحلهٔ بعد طراحی می‌شوند"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg></button>
+          </div>
+
+          <div class="filters" role="group" aria-label="نوع معامله" data-list="fullPropertyList,appPropertyList" data-search-input="propertySearch" data-empty="propertyEmpty">
+            <button class="filter active" data-filter="all" type="button">همه</button>
+            <button class="filter" data-filter="sale" type="button">فروش</button>
+            <button class="filter" data-filter="rent" type="button">اجاره</button>
+          </div>
+
+          <div class="list-heading">
+            <h2>فایل‌های پیشنهادی</h2>
+            <div class="list-actions">
+              <button class="view-toggle app-mode" id="propertyViewToggle" type="button" aria-label="تغییر به نمایش تصویری" aria-pressed="true" title="تغییر به نمایش تصویری">
+                <svg class="icon app-view-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/></svg>
+                <svg class="icon visual-view-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
+              </button>
+              <button class="sort-button" type="button" data-toast="مرتب‌سازی روی جدیدترین تنظیم شد"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>جدیدترین</button>
+            </div>
+          </div>
+          <div class="full-property-list" id="fullPropertyList" aria-live="polite" hidden>
+            <article class="full-property-card" data-kind="sale visit" data-search="آپارتمان نیاوران کامرانیه فروش">
+              <div class="property-cover"><span class="cover-shape" aria-hidden="true"></span><span class="cover-status">فروش</span><button class="favorite" type="button" aria-label="افزودن آپارتمان نیاوران به علاقه‌مندی"><svg class="icon" viewBox="0 0 24 24"><path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6l1.2 1.2L12 21l7.6-7.6 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z"/></svg></button></div>
+              <div class="property-detail"><h3>آپارتمان دوخوابهٔ نیاوران</h3><div class="detail-meta"><span>۱۲۰ متر</span><span>۲ خواب</span><span>طبقه ۴</span><span>پارکینگ</span></div><div class="detail-bottom"><span class="detail-price">۸٫۴ میلیارد تومان</span><button class="detail-button" type="button" data-open-detail="property">مشاهده جزئیات</button></div></div>
+            </article>
+            <article class="full-property-card" data-kind="rent" data-search="دفتر کار ونک اجاره اداری">
+              <div class="property-cover"><span class="cover-shape" aria-hidden="true"></span><span class="cover-status">اجاره</span><button class="favorite" type="button" aria-label="افزودن دفتر ونک به علاقه‌مندی"><svg class="icon" viewBox="0 0 24 24"><path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6l1.2 1.2L12 21l7.6-7.6 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z"/></svg></button></div>
+              <div class="property-detail"><h3>دفتر کار مدرن در ونک</h3><div class="detail-meta"><span>۹۰ متر</span><span>۲ اتاق</span><span>آسانسور</span><span>موقعیت اداری</span></div><div class="detail-bottom"><span class="detail-price">۴۵ میلیون اجاره</span><button class="detail-button" type="button" data-open-detail="property">مشاهده جزئیات</button></div></div>
+            </article>
+            <article class="full-property-card" data-kind="sale" data-search="ویلای لواسان فروش حیاط دار">
+              <div class="property-cover"><span class="cover-shape" aria-hidden="true"></span><span class="cover-status">فروش</span><button class="favorite" type="button" aria-label="افزودن ویلای لواسان به علاقه‌مندی"><svg class="icon" viewBox="0 0 24 24"><path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6l1.2 1.2L12 21l7.6-7.6 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z"/></svg></button></div>
+              <div class="property-detail"><h3>ویلای حیاط‌دار در لواسان</h3><div class="detail-meta"><span>۳۶۰ متر</span><span>۴ خواب</span><span>استخر</span><span>سند تک‌برگ</span></div><div class="detail-bottom"><span class="detail-price">۲۹ میلیارد تومان</span><button class="detail-button" type="button" data-open-detail="property">مشاهده جزئیات</button></div></div>
+            </article>
+          </div>
+          <div class="app-property-list" id="appPropertyList" aria-live="polite">
+            <button class="app-property-card" type="button" data-kind="sale visit" data-search="آپارتمان نیاوران کامرانیه فروش" data-open-detail="property" aria-label="مشاهده جزئیات آپارتمان دوخوابه نیاوران">
+              <span class="app-card-content">
+                <span class="app-card-title">آپارتمان دوخوابهٔ نیاوران</span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20 20 4M7 17l-3-3M11 13l-3-3M15 9l-3-3M19 5l-3-3"/></svg><span><strong>متراژ:</strong> ۱۲۰ متر</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 10h.01M3 14h18"/></svg><span><strong>مبلغ کل:</strong> ۸٫۴ میلیارد تومان</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><path d="M5 17h14l-1-6H6ZM7 17v2M17 17v2M7 11l2-4h6l2 4"/></svg><span><strong>پارکینگ:</strong> دارد</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span><strong>مالک:</strong> بدون مالک</span></span>
+              </span>
+              <span class="app-card-image"><svg class="icon building-icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="app-card-badge sale">فروش</span></span>
+            </button>
+
+            <button class="app-property-card" type="button" data-kind="rent" data-search="دفتر کار ونک اجاره اداری" data-open-detail="property" aria-label="مشاهده جزئیات دفتر کار مدرن در ونک">
+              <span class="app-card-content">
+                <span class="app-card-title">دفتر کار مدرن در ونک</span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20 20 4M7 17l-3-3M11 13l-3-3M15 9l-3-3M19 5l-3-3"/></svg><span><strong>متراژ:</strong> ۹۰ متر</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 10h.01M3 14h18"/></svg><span><strong>ودیعه:</strong> —</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 10h.01M3 14h18"/></svg><span><strong>اجاره:</strong> ۴۵ میلیون تومان</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><path d="M5 17h14l-1-6H6ZM7 17v2M17 17v2M7 11l2-4h6l2 4"/></svg><span><strong>پارکینگ:</strong> ندارد</span></span>
+              </span>
+              <span class="app-card-image"><svg class="icon building-icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="app-card-badge rent">اجاره</span></span>
+            </button>
+
+            <button class="app-property-card" type="button" data-kind="sale" data-search="ویلای لواسان فروش حیاط دار" data-open-detail="property" aria-label="مشاهده جزئیات ویلای حیاط‌دار در لواسان">
+              <span class="app-card-content">
+                <span class="app-card-title">ویلای حیاط‌دار در لواسان</span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20 20 4M7 17l-3-3M11 13l-3-3M15 9l-3-3M19 5l-3-3"/></svg><span><strong>متراژ:</strong> ۳۶۰ متر</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 10h.01M3 14h18"/></svg><span><strong>مبلغ کل:</strong> ۲۹ میلیارد تومان</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><path d="M5 17h14l-1-6H6ZM7 17v2M17 17v2M7 11l2-4h6l2 4"/></svg><span><strong>پارکینگ:</strong> ندارد</span></span>
+                <span class="app-card-line"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span><strong>مالک:</strong> بدون مالک</span></span>
+              </span>
+              <span class="app-card-image"><svg class="icon building-icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="app-card-badge sale">فروش</span></span>
+            </button>
+          </div>
+          <div class="empty-result" id="propertyEmpty" hidden><span class="empty-icon"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><strong>ملکی با این مشخصات پیدا نشد</strong><p>عبارت ساده‌تری بنویسید یا فیلترها را پاک کنید.</p><button type="button" data-clear-search="propertySearch">پاک کردن جست‌وجو</button></div>
+        </section>
+
+        <section class="app-page" id="customersPage" aria-labelledby="customersPageTitle" hidden>
+          <header class="page-header">
+            <div><h1 class="page-title" id="customersPageTitle">مشتری‌ها</h1><p class="page-subtitle">نیازها و پیگیری‌ها در یک نگاه</p></div>
+            <button class="page-action" type="button" aria-label="ثبت مشتری جدید" data-open-customer><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6"/></svg></button>
+          </header>
+
+          <div class="search-row">
+            <label class="search-box"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="customerSearch" type="search" placeholder="نام، شماره یا نیاز مشتری" aria-label="جست‌وجوی مشتری"></label>
+            <button class="filter-action" type="button" aria-label="فیلتر مشتری‌ها" data-toast="فیلتر مشتری‌ها در مرحلهٔ بعد طراحی می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg></button>
+          </div>
+
+          <div class="customer-summary" aria-label="خلاصه مشتری‌ها">
+            <div class="summary-tile"><b>۱۲</b><span>فعال</span></div>
+            <div class="summary-tile"><b>۵</b><span>نهایی‌شده</span></div>
+            <div class="summary-tile"><b>۳</b><span>انصراف‌داده</span></div>
+          </div>
+
+          <div class="list-heading"><h2>مشتری‌های اخیر</h2><button class="sort-button" type="button" data-toast="مشتری‌ها براساس تاریخ ثبت مرتب شدند"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>جدیدترین</button></div>
+          <div class="customer-list" id="customerList" aria-live="polite">
+            <article class="customer-card" data-search="علی رضایی خرید آپارتمان نیاوران">
+              <div class="customer-main"><div class="customer-avatar">ع‌ر</div><div><h3 class="customer-name">علی رضایی</h3><p class="customer-need">خریدار آپارتمان در شمال تهران</p></div><span class="priority active">فعال</span></div>
+              <div class="need-tags"><span class="need-tag">۲ تا ۳ خواب</span><span class="need-tag">تا ۱۲ میلیارد</span><span class="need-tag">نیاوران</span></div>
+              <div class="customer-next"><span class="next-copy">خرید • فعال</span><span class="contact-actions"><button class="customer-detail-link" type="button" data-open-detail="customer">مشاهده پرونده</button><button class="contact-button" type="button" aria-label="تماس با علی رضایی" data-toast="شمارهٔ همراه ثبت‌شده برای تماس استفاده می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 13 13 0 0 0 2.9.7 2 2 0 0 1 1.6 1.9Z"/></svg></button></span></div>
+            </article>
+            <article class="customer-card" data-search="مهسا کریمی اجاره دفتر ونک میرداماد">
+              <div class="customer-main"><div class="customer-avatar">م‌ک</div><div><h3 class="customer-name">مهسا کریمی</h3><p class="customer-need">متقاضی دفتر اداری در ونک</p></div><span class="priority active">فعال</span></div>
+              <div class="need-tags"><span class="need-tag">۸۰ تا ۱۲۰ متر</span><span class="need-tag">تا ۶۰ میلیون</span><span class="need-tag">ونک</span></div>
+              <div class="customer-next"><span class="next-copy">اجاره • فعال</span><span class="contact-actions"><button class="customer-detail-link" type="button" data-open-detail="customer">مشاهده پرونده</button><button class="contact-button" type="button" aria-label="تماس با مهسا کریمی" data-toast="شمارهٔ همراه ثبت‌شده برای تماس استفاده می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 13 13 0 0 0 2.9.7 2 2 0 0 1 1.6 1.9Z"/></svg></button></span></div>
+            </article>
+            <article class="customer-card" data-search="کیوان محمودی خرید ویلا لواسان">
+              <div class="customer-main"><div class="customer-avatar">ک‌م</div><div><h3 class="customer-name">کیوان محمودی</h3><p class="customer-need">خریدار ویلای حیاط‌دار</p></div><span class="priority active">فعال</span></div>
+              <div class="need-tags"><span class="need-tag">۳۰۰ متر به بالا</span><span class="need-tag">تا ۳۵ میلیارد</span><span class="need-tag">لواسان</span></div>
+              <div class="customer-next"><span class="next-copy">خرید • فعال</span><span class="contact-actions"><button class="customer-detail-link" type="button" data-open-detail="customer">مشاهده پرونده</button><button class="contact-button" type="button" aria-label="تماس با کیوان محمودی" data-toast="شمارهٔ همراه ثبت‌شده برای تماس استفاده می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1 2.1-.4 13 13 0 0 0 2.9.7 2 2 0 0 1 1.6 1.9Z"/></svg></button></span></div>
+            </article>
+          </div>
+          <div class="empty-result" id="customerEmpty" hidden><span class="empty-icon"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><strong>مشتری موردنظر پیدا نشد</strong><p>نام، شماره یا نیاز مشتری را دوباره بررسی کنید.</p><button type="button" data-clear-search="customerSearch">پاک کردن جست‌وجو</button></div>
+        </section>
+
+        <section class="app-page" id="reportsPage" aria-labelledby="reportsPageTitle" hidden>
+          <header class="page-header">
+            <div><h1 class="page-title" id="reportsPageTitle">گزارش عملکرد</h1><p class="page-subtitle">مرور نتیجه‌ها در بازهٔ انتخاب‌شده</p></div>
+            <div class="report-header-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16v-4M12 16V8M16 16v-7"/></svg></div>
+          </header>
+
+          <section class="report-filter-card" aria-labelledby="reportPeriodTitle">
+            <div class="report-filter-title" id="reportPeriodTitle"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>بازهٔ گزارش</div>
+            <div class="report-date-grid">
+              <button class="report-date" type="button" data-toast="انتخاب تاریخ شروع گزارش"><span class="report-date-copy"><small>از تاریخ</small><strong>۷ مرداد ۱۴۰۵</strong></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+              <button class="report-date" type="button" data-toast="انتخاب تاریخ پایان گزارش"><span class="report-date-copy"><small>تا تاریخ</small><strong>۶ شهریور ۱۴۰۵</strong></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+            </div>
+            <button class="report-run" id="runReport" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7L20 19M20 14v5h-5"/></svg><span>اجرای گزارش</span></button>
+          </section>
+
+          <div class="report-metrics" aria-label="شاخص‌های گزارش">
+            <article class="report-metric">
+              <span class="report-metric-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg></span>
+              <b>۷</b><span>املاک واگذارشده</span>
+            </article>
+            <article class="report-metric secondary">
+              <span class="report-metric-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6"/></svg></span>
+              <b>۸</b><span>مشتریان ایجادشده</span>
+            </article>
+          </div>
+
+          <section class="report-section" aria-labelledby="propertyStatusReportTitle" aria-label="تغییر وضعیت املاک در بازه: موجود ۸، رزرو ۳، فروخته‌شده ۴، اجاره‌رفته ۲، بایگانی ۱">
+            <div class="report-section-head"><h2 id="propertyStatusReportTitle">تغییر وضعیت املاک در بازه</h2><span>تعداد</span></div>
+            <div class="report-bars">
+              <div class="report-bar-row"><div class="report-bar-copy"><span>موجود</span><strong>۸</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 100%"></div></div></div>
+              <div class="report-bar-row"><div class="report-bar-copy"><span>رزرو</span><strong>۳</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 38%"></div></div></div>
+              <div class="report-bar-row"><div class="report-bar-copy"><span>فروخته‌شده</span><strong>۴</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 50%"></div></div></div>
+              <div class="report-bar-row"><div class="report-bar-copy"><span>اجاره‌رفته</span><strong>۲</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 25%"></div></div></div>
+              <div class="report-bar-row"><div class="report-bar-copy"><span>بایگانی</span><strong>۱</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 13%"></div></div></div>
+            </div>
+          </section>
+
+          <section class="report-section" aria-labelledby="customerStatusReportTitle" aria-label="مشتریان بر اساس وضعیت: فعال ۱۲، نهایی‌شده ۵، انصراف‌داده ۳، معامله در جای دیگر ۱">
+            <div class="report-section-head"><h2 id="customerStatusReportTitle">مشتریان بر اساس وضعیت</h2><span>تعداد</span></div>
+            <div class="report-bars">
+              <div class="report-bar-row"><div class="report-bar-copy"><span>فعال</span><strong>۱۲</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 100%"></div></div></div>
+              <div class="report-bar-row"><div class="report-bar-copy"><span>نهایی‌شده</span><strong>۵</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 42%"></div></div></div>
+              <div class="report-bar-row"><div class="report-bar-copy"><span>انصراف‌داده</span><strong>۳</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 25%"></div></div></div>
+              <div class="report-bar-row"><div class="report-bar-copy"><span>معامله در جای دیگر</span><strong>۱</strong></div><div class="report-bar-track" aria-hidden="true"><div class="report-bar-fill" style="--bar: 9%"></div></div></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="app-page" id="profilePage" aria-labelledby="profilePageTitle" hidden>
+          <header class="page-header">
+            <div><h1 class="page-title" id="profilePageTitle">حساب من</h1><p class="page-subtitle">مشخصات حساب و دسترسی آژانس</p></div>
+            <div class="report-header-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>
+          </header>
+
+          <section class="account-hero" aria-label="مشخصات کاربر">
+            <div class="account-avatar" aria-hidden="true">ن</div>
+            <h2 id="profileDisplayName">نسترن</h2>
+            <p class="account-email" id="profileDisplayEmail">—</p>
+            <span class="account-role">کارشناس آژانس</span>
+            <p class="account-phone" id="profileDisplayPhone">—</p>
+          </section>
+
+          <section class="account-agency" aria-label="اطلاعات آژانس">
+            <span class="agency-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7h10v14M15 11h4v10M8 10h4M8 14h4M8 18h4"/></svg></span>
+            <span><strong>آژانس</strong><small>منطقهٔ زمانی: —</small></span>
+          </section>
+
+          <section class="account-menu" aria-label="تنظیمات حساب">
+            <button class="account-menu-button" type="button" data-open-profile-dialog="profileEditDialog">
+              <span class="account-menu-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></span>
+              <span class="account-menu-copy"><strong>ویرایش مشخصات</strong><small>نام، ایمیل و تلفن</small></span>
+              <svg class="icon menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button class="account-menu-button" type="button" data-open-profile-dialog="passwordChangeDialog">
+              <span class="account-menu-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2"/></svg></span>
+              <span class="account-menu-copy"><strong>تغییر رمز عبور</strong><small>به‌روزرسانی رمز ورود حساب</small></span>
+              <svg class="icon menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+          </section>
+
+          <section class="sync-card" id="profileSyncCard" hidden aria-label="عملیات در انتظار همگام‌سازی">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            <span><strong><span id="profileSyncCount">۰</span> عملیات در انتظار همگام‌سازی</strong><small>پیش از خروج، اتصال اینترنت و همگام‌سازی را بررسی کنید.</small></span>
+            <button class="sync-action" type="button" aria-label="همگام‌سازی" data-toast="همگام‌سازی در پیش‌نمایش انجام نمی‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M20 7h-5V2M4 17h5v5M6.1 9A7 7 0 0 1 18.5 5.5L20 7M4 17l1.5 1.5A7 7 0 0 0 17.9 15"/></svg></button>
+          </section>
+
+          <div class="account-danger" aria-label="گزینه‌های خروج">
+            <button class="logout-button" type="button" data-toast="خروج از این دستگاه در پیش‌نمایش انجام نمی‌شود"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/></svg>خروج از این دستگاه</button>
+            <button class="logout-button all" type="button" data-toast="خروج از همه دستگاه‌ها در پیش‌نمایش انجام نمی‌شود"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="14" height="12" rx="2"/><path d="M8 21h4M10 17v4M19 9l4 4M23 9l-4 4"/></svg>خروج از همه دستگاه‌ها</button>
+          </div>
+
+          <div class="brand-signature" aria-label="ملک بان، طراحی‌شده توسط فندوق استودیو"><span class="brand-mark" aria-hidden="true">م</span><span><strong>ملک بان</strong><small>طراحی‌شده توسط فندوق استودیو</small></span></div>
+        </section>
+
+        <section class="record-form-page" id="propertyFormPage" aria-labelledby="propertyFormTitle" hidden>
+          <form class="record-form" id="propertyRecordForm" data-form-kind="property">
+            <header class="record-form-toolbar">
+              <button class="record-form-close" type="button" data-close-form aria-label="بازگشت از ثبت ملک"><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+              <div><h1 id="propertyFormTitle">ثبت ملک جدید</h1><p>همان اطلاعات اپ، با ظاهر جدید</p></div>
+              <span class="record-form-toolbar-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg></span>
+            </header>
+
+            <div class="form-flow" style="--step-count: 4">
+              <div class="form-stepper" aria-label="مراحل ثبت ملک">
+                <button class="flow-step active" type="button" data-form-step="0"><span class="flow-step-number">۱</span><span>اطلاعات اصلی</span></button>
+                <button class="flow-step" type="button" data-form-step="1"><span class="flow-step-number">۲</span><span>مبلغ و نشانی</span></button>
+                <button class="flow-step" type="button" data-form-step="2"><span class="flow-step-number">۳</span><span>مشخصات ساختمان</span></button>
+                <button class="flow-step" type="button" data-form-step="3"><span class="flow-step-number">۴</span><span>مالک و تأیید</span></button>
+              </div>
+              <div class="form-progress-track" aria-hidden="true"><div class="form-progress-value" style="--progress: 25%"></div></div>
+            </div>
+            <div class="form-step-caption"><h2 data-form-caption>اطلاعات اصلی</h2><span data-form-count>مرحله ۱ از ۴</span></div>
+
+            <div class="form-step-panel" data-form-panel="0">
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM8 9h8M8 13h6"/></svg>اطلاعات اصلی ملک</div>
+                <div class="record-grid">
+                  <label class="record-field span-2"><span>عنوان ملک <i class="required-mark">*</i></span><input name="title" required autocomplete="off"></label>
+                  <label class="record-field"><span>نوع معامله <i class="required-mark">*</i></span><select id="propertyTransaction" name="transaction_type" required><option value="sale">فروش</option><option value="rent">اجاره</option></select></label>
+                  <label class="record-field"><span>نوع ملک <i class="required-mark">*</i></span><select id="propertyType" name="property_type" required><option value="apartment">آپارتمان</option><option value="office">اداری</option><option value="house">خانه</option><option value="villa">ویلا</option><option value="land_old_building">زمین و ملک کلنگی</option><option value="bureau">دفتر</option><option value="industrial">صنعتی</option></select></label>
+                  <label class="record-field span-2"><span>توضیحات</span><textarea name="description" rows="3"></textarea></label>
+                </div>
+              </section>
+            </div>
+
+            <div class="form-step-panel" data-form-panel="1" hidden>
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4zM7 10h.01M4 14h16"/></svg>مبلغ و متراژ</div>
+                <div class="record-grid">
+                  <label class="record-field span-2"><span>مساحت (متر مربع) <i class="required-mark">*</i></span><input name="area_sqm" inputmode="decimal" required></label>
+                  <div class="conditional-grid" data-property-transaction-panel="sale">
+                    <label class="record-field"><span>مبلغ کل فروش (تومان) <i class="required-mark">*</i></span><input name="sale_price" inputmode="numeric" required></label>
+                    <label class="record-field"><span>مبلغ هر متر (تومان) <i class="required-mark">*</i></span><input name="sale_price_per_sqm" inputmode="numeric" required></label>
+                    <p class="field-hint span-2">هر کدام را تغییر دهید، مبلغ دیگر با گردکردن معمولی محاسبه می‌شود.</p>
+                    <div class="conditional-grid" data-sale-tenant-fields hidden>
+                      <label class="record-field"><span>مبلغ ودیعه مستأجر (تومان)</span><input name="deposit_amount" inputmode="numeric"></label>
+                      <label class="record-field"><span>مبلغ اجاره مستأجر (تومان)</span><input name="monthly_rent" inputmode="numeric"></label>
+                    </div>
+                  </div>
+                  <div class="conditional-grid" data-property-transaction-panel="rent" hidden>
+                    <label class="record-field"><span>ودیعه (تومان) <i class="required-mark">*</i></span><input name="deposit_amount" inputmode="numeric" required></label>
+                    <label class="record-field"><span>اجاره ماهانه (تومان) <i class="required-mark">*</i></span><input name="monthly_rent" inputmode="numeric" required></label>
+                    <label class="switch-row span-2"><span class="switch-copy"><strong>قابل تبدیل ودیعه و اجاره</strong><small>هر یک میلیون تومان ودیعه برابر سی هزار تومان اجاره</small></span><input id="propertyConvertible" name="is_convertible" type="checkbox" aria-label="قابل تبدیل ودیعه و اجاره"></label>
+                    <label class="record-field span-2" data-minimum-deposit hidden><span>حداقل ودیعه (تومان) <i class="required-mark">*</i></span><input name="minimum_deposit" inputmode="numeric" required></label>
+                  </div>
+                </div>
+              </section>
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2"/></svg>نشانی و تحویل</div>
+                <div class="record-grid">
+                  <label class="record-field"><span>شهر <i class="required-mark">*</i></span><input name="city" required></label>
+                  <label class="record-field"><span>محله</span><input name="district"></label>
+                  <label class="record-field span-2"><span>نشانی <i class="required-mark">*</i></span><textarea name="street_address" rows="2" required></textarea></label>
+                  <label class="record-field"><span>شماره پلاک نشانی <i class="required-mark">*</i></span><input name="plaque" required></label>
+                  <label class="record-field"><span>وضعیت تخلیه <i class="required-mark">*</i></span><select id="propertyDelivery" name="delivery_status" required></select></label>
+                  <label class="record-field span-2" data-delivery-date hidden><span data-delivery-date-label>تاریخ آماده تحویل</span><input name="delivery_date" inputmode="numeric" placeholder="مثلاً ۱۴۰۵/۰۶/۰۶"></label>
+                </div>
+              </section>
+            </div>
+
+            <div class="form-step-panel" data-form-panel="2" hidden>
+              <div data-property-land hidden>
+                <section class="form-card">
+                  <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19 20 4M7 17l-3-3M11 13l-3-3M15 9l-3-3"/></svg>مشخصات زمین</div>
+                  <div class="choice-group"><span class="choice-label">نوع سند</span><div class="choice-chips"><label class="choice-chip"><input type="radio" name="land_deed_type" value="single_page"><span>سند تک‌برگ</span></label><label class="choice-chip"><input type="radio" name="land_deed_type" value="booklet"><span>منگوله‌دار</span></label><label class="choice-chip"><input type="radio" name="land_deed_type" value="contract"><span>قولنامه‌ای</span></label><label class="choice-chip"><input type="radio" name="land_deed_type" value="other"><span>سایر</span></label></div></div>
+                  <div class="form-switches" style="margin-top:12px"><label class="switch-row"><span class="switch-copy"><strong>وام</strong></span><input type="checkbox" name="land_has_loan"></label><label class="switch-row"><span class="switch-copy"><strong>قابل معاوضه</strong></span><input type="checkbox" name="land_is_exchangeable"></label><label class="switch-row"><span class="switch-copy"><strong>قابلیت تجمیع</strong></span><input type="checkbox" name="can_aggregate"></label></div>
+                  <div class="record-grid" style="margin-top:12px"><label class="record-field span-2"><span>حد زمین (بر)</span><input name="land_frontage" inputmode="decimal"><small class="field-hint">متر</small></label></div>
+                </section>
+              </div>
+
+              <div data-property-building>
+                <section class="form-card">
+                  <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>مشخصات ساختمان</div>
+                  <div class="record-grid">
+                    <label class="record-field span-2"><span>اتاق</span><input name="bedrooms" inputmode="numeric"></label>
+                    <label class="record-field"><span>طبقه</span><input name="floor_number" inputmode="numeric"></label>
+                    <label class="record-field"><span>تعداد طبقات</span><input name="total_floors" inputmode="numeric"></label>
+                    <label class="record-field"><span>واحد در طبقه</span><input name="units_per_floor" inputmode="numeric"></label>
+                    <label class="record-field" data-property-sale-only><span>سال ساخت</span><input name="year_built" inputmode="numeric"></label>
+                    <label class="record-field"><span>تعداد پارکینگ</span><input name="parking_spaces" inputmode="numeric"></label>
+                  </div>
+                  <div class="form-switches" style="margin-top:12px"><label class="switch-row"><span class="switch-copy"><strong>انباری</strong></span><input type="checkbox" name="has_storage_room"></label><label class="switch-row"><span class="switch-copy"><strong>آسانسور</strong></span><input type="checkbox" name="has_elevator"></label><label class="switch-row"><span class="switch-copy"><strong>بالکن</strong></span><input type="checkbox" name="has_balcony"></label></div>
+                </section>
+
+                <section class="form-card" data-property-house hidden>
+                  <div class="record-grid"><label class="record-field span-2"><span>نوع بنا <i class="required-mark">*</i></span><select name="building_type" required><option value="">انتخاب کنید</option><option value="detached">ویلای مستقل</option><option value="township">شهرکی</option><option value="duplex">دوبلکس</option><option value="triplex">تریبلکس</option><option value="apartment_villa">ویلا آپارتمانی</option></select></label></div>
+                </section>
+
+                <section class="form-card" data-property-industrial hidden>
+                  <div class="form-card-title">مشخصات صنعتی</div>
+                  <div class="record-grid"><label class="record-field span-2"><span>نوع سازه</span><input name="structure_type"></label><label class="record-field"><span>تعداد خط تلفن</span><input name="telephone_line_count" inputmode="numeric"></label><label class="record-field"><span>متراژ زمین</span><input name="land_area" inputmode="decimal"></label><label class="record-field span-2"><span>متراژ بنا</span><input name="building_area" inputmode="decimal"></label></div>
+                  <div class="form-switches" style="margin-top:12px"><label class="switch-row"><span class="switch-copy"><strong>آب</strong></span><input type="checkbox" name="has_water"></label><label class="switch-row"><span class="switch-copy"><strong>برق</strong></span><input type="checkbox" name="has_electricity"></label><label class="switch-row"><span class="switch-copy"><strong>گاز</strong></span><input type="checkbox" name="has_gas"></label></div>
+                </section>
+
+                <section class="form-card">
+                  <div class="form-card-title">امکانات و ویژگی‌ها</div>
+                  <div class="choice-group"><span class="choice-label">نوع سرویس</span><div class="choice-chips"><label class="choice-chip"><input type="checkbox" name="toilet_types" value="iranian"><span>ایرانی</span></label><label class="choice-chip"><input type="checkbox" name="toilet_types" value="western"><span>فرنگی</span></label></div></div>
+                  <div class="form-switches" style="margin-top:12px"><label class="switch-row"><span class="switch-copy"><strong>سرویس مستر</strong></span><input type="checkbox" name="has_master_bathroom"></label></div>
+                  <div class="record-grid" style="margin-top:12px">
+                    <label class="record-field"><span>نوع کابینت</span><select name="cabinet_type"><option value="">انتخاب نشده</option><option value="mdf">MDF</option><option value="high_gloss">های‌گلاس</option><option value="membrane">ممبران</option><option value="wood">چوب</option><option value="metal">فلزی</option><option value="metal_wood_doors">فلزی درب چوبی</option><option value="other">سایر</option></select></label>
+                    <label class="record-field"><span>نوع گرمایش</span><select name="heating_type"><option value="">انتخاب نشده</option><option value="heater">بخاری</option><option value="radiator">شوفاژ</option><option value="floor_heating">گرمایش از کف</option><option value="duct_split">داکت اسپلیت</option><option value="fireplace">شومینه</option><option value="split">اسپلیت</option><option value="fan_coil">فن کوئل</option></select></label>
+                    <label class="record-field"><span>نوع سرمایش</span><select name="cooling_type"><option value="">انتخاب نشده</option><option value="water_cooler">کولر آبی</option><option value="air_conditioner">کولر گازی</option><option value="duct_split">داکت اسپلیت</option><option value="split">اسپلیت</option><option value="other">سایر</option></select></label>
+                    <label class="record-field"><span>نوع کف‌پوش</span><select name="flooring_type"><option value="">انتخاب نشده</option><option value="ceramic">سرامیک</option><option value="stone">سنگ</option><option value="carpet">موکت</option><option value="parquet">پارکت</option><option value="pvc">کف‌پوش PVC</option><option value="mosaic">موزائیک</option><option value="cement">سیمان</option></select></label>
+                  </div>
+                  <div class="choice-group" style="margin-top:12px"><span class="choice-label">وضعیت بازسازی</span><div class="choice-chips"><label class="choice-chip"><input type="radio" name="renovation_status" value="new"><span>نوساز</span></label><label class="choice-chip"><input type="radio" name="renovation_status" value="renovated"><span>بازسازی‌شده</span></label><label class="choice-chip"><input type="radio" name="renovation_status" value="needs_renovation"><span>نیاز به بازسازی</span></label><label class="choice-chip"><input type="radio" name="renovation_status" value="painted"><span>رنگ‌شده</span></label><label class="choice-chip"><input type="radio" name="renovation_status" value="wallpaper"><span>کاغذ دیواری</span></label></div></div>
+                  <div class="choice-group" style="margin-top:12px"><span class="choice-label">جهت ساختمان</span><div class="choice-chips"><label class="choice-chip"><input type="radio" name="building_orientation" value="north"><span>شمالی</span></label><label class="choice-chip"><input type="radio" name="building_orientation" value="south"><span>جنوبی</span></label><label class="choice-chip"><input type="radio" name="building_orientation" value="east"><span>شرقی</span></label><label class="choice-chip"><input type="radio" name="building_orientation" value="west"><span>غربی</span></label></div></div>
+                  <div class="choice-group" style="margin-top:12px"><span class="choice-label">نوع سند</span><div class="choice-chips"><label class="choice-chip"><input type="radio" name="deed_type" value="single_page"><span>سند تک‌برگ</span></label><label class="choice-chip"><input type="radio" name="deed_type" value="booklet"><span>منگوله‌دار</span></label><label class="choice-chip"><input type="radio" name="deed_type" value="contract"><span>قولنامه‌ای</span></label><label class="choice-chip"><input type="radio" name="deed_type" value="other"><span>سایر</span></label></div></div>
+                  <div class="form-switches" style="margin-top:12px"><div data-property-sale-only><label class="switch-row"><span class="switch-copy"><strong>وام</strong></span><input type="checkbox" name="has_loan"></label><label class="switch-row" style="margin-top:8px"><span class="switch-copy"><strong>قابل معاوضه</strong></span><input type="checkbox" name="is_exchangeable"></label></div><label class="switch-row"><span class="switch-copy"><strong>استخر</strong></span><input type="checkbox" name="has_pool"></label><label class="switch-row"><span class="switch-copy"><strong>جکوزی</strong></span><input type="checkbox" name="has_jacuzzi"></label><label class="switch-row"><span class="switch-copy"><strong>سونا</strong></span><input type="checkbox" name="has_sauna"></label></div>
+                </section>
+              </div>
+            </div>
+
+            <div class="form-step-panel" data-form-panel="3" hidden>
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>اطلاعات مالک</div>
+                <div class="record-grid"><label class="record-field span-2"><span>نام کامل مالک <i class="required-mark">*</i></span><input name="owner_name" required></label><label class="record-field"><span>شماره همراه مالک <i class="required-mark">*</i></span><input name="owner_mobile" type="tel" inputmode="tel" required></label><label class="record-field"><span>تلفن ثابت مالک</span><input name="owner_phone" type="tel" inputmode="tel"></label><label class="record-field span-2"><span>توضیحات مالک</span><textarea name="owner_notes" rows="2"></textarea></label></div>
+              </section>
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-5-5L5 19"/></svg>تصاویر ملک</div>
+                <button class="image-picker" type="button" data-toast="انتخاب تصویر در نسخهٔ نمایشی انجام نمی‌شود"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><strong>افزودن تصویر</strong><small>اختیاری، حداکثر پنج تصویر؛ نخستین تصویر به‌صورت خودکار کاور می‌شود.</small></button>
+                <div class="form-section-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>در نبود اینترنت، ملک بدون تصویر در صف امن دستگاه نگهداری و پس از اتصال همگام‌سازی می‌شود.</span></div>
+              </section>
+            </div>
+
+            <div class="form-actions"><button class="form-next" type="button" data-form-next><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span>مرحله بعد</span></button><button class="form-prev" type="button" data-form-prev hidden>مرحله قبل</button></div>
+          </form>
+        </section>
+
+        <section class="record-form-page" id="customerFormPage" aria-labelledby="customerFormTitle" hidden>
+          <form class="record-form" id="customerRecordForm" data-form-kind="customer">
+            <header class="record-form-toolbar">
+              <button class="record-form-close" type="button" data-close-form aria-label="بازگشت از ثبت مشتری"><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+              <div><h1 id="customerFormTitle">ثبت مشتری جدید</h1><p>همان اطلاعات اپ، با ظاهر جدید</p></div>
+              <span class="record-form-toolbar-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6"/></svg></span>
+            </header>
+
+            <div class="form-flow" style="--step-count: 5">
+              <div class="form-stepper" aria-label="مراحل ثبت مشتری">
+                <button class="flow-step active" type="button" data-form-step="0"><span class="flow-step-number">۱</span><span>اطلاعات تماس</span></button>
+                <button class="flow-step" type="button" data-form-step="1"><span class="flow-step-number">۲</span><span>نوع نیاز</span></button>
+                <button class="flow-step" type="button" data-form-step="2"><span class="flow-step-number">۳</span><span>ویژگی‌های موردنظر</span></button>
+                <button class="flow-step" type="button" data-form-step="3"><span class="flow-step-number">۴</span><span>محدوده و بودجه</span></button>
+                <button class="flow-step" type="button" data-form-step="4"><span class="flow-step-number">۵</span><span>توضیحات و تأیید</span></button>
+              </div>
+              <div class="form-progress-track" aria-hidden="true"><div class="form-progress-value" style="--progress: 20%"></div></div>
+            </div>
+            <div class="form-step-caption"><h2 data-form-caption>اطلاعات تماس</h2><span data-form-count>مرحله ۱ از ۵</span></div>
+
+            <div class="form-step-panel" data-form-panel="0">
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>اطلاعات تماس مشتری</div>
+                <div class="record-grid"><label class="record-field span-2"><span>نام کامل مشتری <i class="required-mark">*</i></span><input name="full_name" autocomplete="name" required></label><label class="record-field"><span>شماره همراه <i class="required-mark">*</i></span><input name="mobile" type="tel" inputmode="tel" autocomplete="tel" required></label><label class="record-field"><span>تلفن ثابت</span><input name="phone" type="tel" inputmode="tel"></label></div>
+              </section>
+            </div>
+
+            <div class="form-step-panel" data-form-panel="1" hidden>
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v10h14V10"/></svg>نوع نیاز مشتری</div>
+                <div class="record-grid">
+                  <label class="record-field"><span>نوع درخواست <i class="required-mark">*</i></span><select id="customerIntent" name="intent" required><option value="buy">خرید</option><option value="rent">اجاره</option></select></label>
+                  <label class="record-field"><span>نوع ملک موردنظر <i class="required-mark">*</i></span><select id="customerPropertyType" name="desired_property_type" required><option value="apartment">آپارتمان</option><option value="office">اداری</option><option value="house">خانه</option><option value="villa">ویلا</option><option value="land_old_building">زمین و ملک کلنگی</option><option value="bureau">دفتر</option><option value="industrial">صنعتی</option></select></label>
+                </div>
+              </section>
+            </div>
+
+            <div class="form-step-panel" data-form-panel="2" hidden>
+              <section class="form-card" data-customer-rent-only hidden>
+                <div class="form-card-title">ویژگی‌های اجاره‌ای</div>
+                <div class="record-grid"><label class="record-field span-2"><span>حداقل تعداد اتاق</span><input name="min_bedrooms" inputmode="numeric"></label></div>
+                <div class="form-switches" style="margin-top:12px"><label class="switch-row"><span class="switch-copy"><strong>آسانسور</strong></span><input type="checkbox" name="has_elevator"></label><label class="switch-row"><span class="switch-copy"><strong>بالکن</strong></span><input type="checkbox" name="has_balcony"></label><label class="switch-row"><span class="switch-copy"><strong>مالک در ساختمان سکونت دارد</strong></span><input type="checkbox" name="owner_resides"></label></div>
+              </section>
+
+              <section class="form-card">
+                <div class="form-card-title">امکانات موردنظر</div>
+                <div class="form-switches"><label class="switch-row"><span class="switch-copy"><strong>پارکینگ</strong></span><input type="checkbox" name="has_parking"></label><label class="switch-row"><span class="switch-copy"><strong>انباری</strong></span><input type="checkbox" name="has_storage_room"></label></div>
+                <div class="record-grid" style="margin-top:12px" data-customer-house hidden><label class="record-field span-2"><span>نوع بنا <i class="required-mark">*</i></span><select name="building_type" required><option value="">انتخاب کنید</option><option value="detached">ویلای مستقل</option><option value="township">شهرکی</option><option value="duplex">دوبلکس</option><option value="triplex">تریبلکس</option><option value="apartment_villa">ویلا آپارتمانی</option></select></label></div>
+              </section>
+
+              <section class="form-card" data-customer-industrial hidden>
+                <div class="form-card-title">مشخصات صنعتی</div>
+                <div class="record-grid"><label class="record-field span-2"><span>نوع سازه</span><input name="structure_type"></label><label class="record-field span-2"><span>تعداد خط تلفن</span><input name="telephone_line_count" inputmode="numeric"></label><label class="record-field"><span>حداقل متراژ زمین <i class="required-mark">*</i></span><input name="land_area_min" inputmode="decimal" required></label><label class="record-field"><span>حداکثر متراژ زمین <i class="required-mark">*</i></span><input name="land_area_max" inputmode="decimal" required></label><label class="record-field"><span>حداقل متراژ بنا <i class="required-mark">*</i></span><input name="building_area_min" inputmode="decimal" required></label><label class="record-field"><span>حداکثر متراژ بنا <i class="required-mark">*</i></span><input name="building_area_max" inputmode="decimal" required></label></div>
+                <div class="form-switches" style="margin-top:12px"><label class="switch-row"><span class="switch-copy"><strong>آب</strong></span><input type="checkbox" name="has_water"></label><label class="switch-row"><span class="switch-copy"><strong>برق</strong></span><input type="checkbox" name="has_electricity"></label><label class="switch-row"><span class="switch-copy"><strong>گاز</strong></span><input type="checkbox" name="has_gas"></label></div>
+              </section>
+
+              <section class="form-card">
+                <div class="choice-group"><span class="choice-label">نوع سرویس</span><div class="choice-chips"><label class="choice-chip"><input type="checkbox" name="toilet_types" value="iranian"><span>ایرانی</span></label><label class="choice-chip"><input type="checkbox" name="toilet_types" value="western"><span>فرنگی</span></label></div></div>
+                <div class="form-switches" style="margin-top:12px" data-customer-master><label class="switch-row"><span class="switch-copy"><strong>سرویس مستر</strong></span><input type="checkbox" name="has_master_bathroom"></label></div>
+                <div class="record-grid" style="margin-top:12px">
+                  <label class="record-field"><span>نوع کابینت</span><select name="cabinet_type"><option value="">انتخاب نشده</option><option value="mdf">MDF</option><option value="high_gloss">های‌گلاس</option><option value="membrane">ممبران</option><option value="wood">چوب</option><option value="metal">فلزی</option><option value="metal_wood_doors">فلزی درب چوبی</option><option value="other">سایر</option></select></label>
+                  <label class="record-field"><span>نوع گرمایش</span><select name="heating_type"><option value="">انتخاب نشده</option><option value="heater">بخاری</option><option value="radiator">شوفاژ</option><option value="floor_heating">گرمایش از کف</option><option value="duct_split">داکت اسپلیت</option><option value="fireplace">شومینه</option><option value="split">اسپلیت</option><option value="fan_coil">فن کوئل</option></select></label>
+                  <label class="record-field"><span>نوع سرمایش</span><select name="cooling_type"><option value="">انتخاب نشده</option><option value="water_cooler">کولر آبی</option><option value="air_conditioner">کولر گازی</option><option value="duct_split">داکت اسپلیت</option><option value="split">اسپلیت</option><option value="other">سایر</option></select></label>
+                  <label class="record-field"><span>نوع کف‌پوش</span><select name="flooring_type"><option value="">انتخاب نشده</option><option value="ceramic">سرامیک</option><option value="stone">سنگ</option><option value="carpet">موکت</option><option value="parquet">پارکت</option><option value="pvc">کف‌پوش PVC</option><option value="mosaic">موزائیک</option><option value="cement">سیمان</option></select></label>
+                </div>
+                <div class="choice-group" style="margin-top:12px"><span class="choice-label">وضعیت بازسازی</span><div class="choice-chips"><label class="choice-chip"><input type="radio" name="renovation_status" value="new"><span>نوساز</span></label><label class="choice-chip"><input type="radio" name="renovation_status" value="renovated"><span>بازسازی‌شده</span></label><label class="choice-chip"><input type="radio" name="renovation_status" value="needs_renovation"><span>نیاز به بازسازی</span></label><label class="choice-chip"><input type="radio" name="renovation_status" value="painted"><span>رنگ‌شده</span></label><label class="choice-chip"><input type="radio" name="renovation_status" value="wallpaper"><span>کاغذ دیواری</span></label></div></div>
+                <div class="choice-group" style="margin-top:12px"><span class="choice-label">جهت ساختمان</span><div class="choice-chips"><label class="choice-chip"><input type="radio" name="building_orientation" value="north"><span>شمالی</span></label><label class="choice-chip"><input type="radio" name="building_orientation" value="south"><span>جنوبی</span></label><label class="choice-chip"><input type="radio" name="building_orientation" value="east"><span>شرقی</span></label><label class="choice-chip"><input type="radio" name="building_orientation" value="west"><span>غربی</span></label></div></div>
+                <div data-customer-buy-only>
+                  <div class="choice-group" style="margin-top:12px"><span class="choice-label">نوع سند</span><div class="choice-chips"><label class="choice-chip"><input type="radio" name="deed_type" value="single_page"><span>سند تک‌برگ</span></label><label class="choice-chip"><input type="radio" name="deed_type" value="booklet"><span>منگوله‌دار</span></label><label class="choice-chip"><input type="radio" name="deed_type" value="contract"><span>قولنامه‌ای</span></label><label class="choice-chip"><input type="radio" name="deed_type" value="other"><span>سایر</span></label></div></div>
+                  <div class="form-switches" style="margin-top:12px"><label class="switch-row"><span class="switch-copy"><strong>وام</strong></span><input type="checkbox" name="has_loan"></label><label class="switch-row"><span class="switch-copy"><strong>قابل معاوضه</strong></span><input type="checkbox" name="is_exchangeable"></label><label class="switch-row"><span class="switch-copy"><strong>استخر</strong></span><input type="checkbox" name="has_pool"></label><label class="switch-row"><span class="switch-copy"><strong>جکوزی</strong></span><input type="checkbox" name="has_jacuzzi"></label><label class="switch-row"><span class="switch-copy"><strong>سونا</strong></span><input type="checkbox" name="has_sauna"></label></div>
+                </div>
+              </section>
+            </div>
+
+            <div class="form-step-panel" data-form-panel="3" hidden>
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2"/></svg>محدودهٔ موردنظر</div>
+                <div class="record-grid"><label class="record-field"><span>شهر موردنظر</span><input name="desired_city"></label><label class="record-field"><span>محلهٔ موردنظر</span><input name="desired_district"></label><div class="conditional-grid" data-customer-general-area><label class="record-field"><span>متراژ از <i class="required-mark">*</i></span><input name="min_area_sqm" inputmode="decimal" required></label><label class="record-field"><span>متراژ تا <i class="required-mark">*</i></span><input name="max_area_sqm" inputmode="decimal" required></label></div></div>
+              </section>
+              <section class="form-card">
+                <div class="form-card-title">بودجه</div>
+                <div class="record-grid" data-customer-budget-buy><label class="record-field span-2"><span>حداقل تعداد اتاق</span><input name="min_bedrooms" inputmode="numeric"></label><label class="record-field"><span>بودجه از (تومان)</span><input name="budget_min" inputmode="numeric"></label><label class="record-field"><span>بودجه تا (تومان)</span><input name="budget_max" inputmode="numeric"></label></div>
+                <div class="record-grid" data-customer-budget-rent hidden><label class="record-field"><span>ودیعه از <i class="required-mark">*</i></span><input name="rental_deposit_min" inputmode="numeric" required></label><label class="record-field"><span>ودیعه تا <i class="required-mark">*</i></span><input name="rental_deposit_max" inputmode="numeric" required></label><label class="record-field"><span>اجاره از <i class="required-mark">*</i></span><input name="rental_rent_min" inputmode="numeric" required></label><label class="record-field"><span>اجاره تا <i class="required-mark">*</i></span><input name="rental_rent_max" inputmode="numeric" required></label><label class="switch-row span-2"><span class="switch-copy"><strong>امکان تبدیل ودیعه و اجاره</strong><small>هر یک میلیون تومان ودیعه برابر سی هزار تومان اجاره</small></span><input type="checkbox" name="accepts_rent_conversion"></label></div>
+              </section>
+            </div>
+
+            <div class="form-step-panel" data-form-panel="4" hidden>
+              <section class="form-card">
+                <div class="form-card-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM8 9h8M8 13h6"/></svg>توضیحات و تأیید</div>
+                <div class="record-grid"><label class="record-field span-2"><span>توضیحات</span><textarea name="description" rows="4"></textarea></label></div>
+                <div class="form-section-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>در نبود اینترنت، مشتری در صف امن دستگاه نگهداری و پس از اتصال همگام‌سازی می‌شود.</span></div>
+              </section>
+            </div>
+
+            <div class="form-actions"><button class="form-next" type="button" data-form-next><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span>مرحله بعد</span></button><button class="form-prev" type="button" data-form-prev hidden>مرحله قبل</button></div>
+          </form>
+        </section>
+
+        <section class="detail-page" id="propertyDetailPage" aria-labelledby="propertyDetailTitle" hidden>
+          <header class="detail-toolbar">
+            <button class="toolbar-button" type="button" data-back-to="properties" aria-label="بازگشت به املاک"><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+            <h1 id="propertyDetailTitle">جزئیات ملک</h1>
+            <button class="toolbar-button" type="button" aria-label="ویرایش ملک" data-toast="ویرایش ملک از همین پرونده انجام می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button>
+          </header>
+
+          <div class="property-detail-visual" aria-label="تصویر ملک">
+            <span class="visual-label">فروش</span>
+            <div class="visual-title"><h2>آپارتمان دوخوابهٔ نیاوران</h2><p>کد ملک MB-1024</p></div>
+          </div>
+
+          <div class="detail-tabs" role="tablist" aria-label="بخش‌های جزئیات ملک">
+            <button class="detail-tab active" type="button" role="tab" aria-selected="true" data-detail-tab="property-overview">مشخصات</button>
+            <button class="detail-tab" type="button" role="tab" aria-selected="false" data-detail-tab="property-notes">یادداشت‌ها</button>
+            <button class="detail-tab" type="button" role="tab" aria-selected="false" data-detail-tab="property-images">تصاویر</button>
+            <button class="detail-tab" type="button" role="tab" aria-selected="false" data-detail-tab="property-history">تاریخچه</button>
+          </div>
+
+          <div class="detail-panel" data-detail-panel="property-overview">
+            <section class="info-card">
+              <div class="info-card-head"><h2>اطلاعات اصلی</h2><button class="status-chip" type="button" data-toast="وضعیت فعلی: موجود">موجود</button></div>
+              <div class="info-list">
+                <div class="info-row"><span class="info-label">کد ملک</span><span class="info-value">MB-1024</span></div>
+                <div class="info-row"><span class="info-label">نوع ملک</span><span class="info-value">آپارتمان</span></div>
+                <div class="info-row"><span class="info-label">نوع معامله</span><span class="info-value">فروش</span></div>
+              </div>
+            </section>
+
+            <section class="info-card">
+              <div class="info-card-head"><h2>قیمت و مشخصات</h2></div>
+              <div class="info-list">
+                <div class="info-row"><span class="info-label">قیمت فروش</span><span class="info-value">۸٫۴ میلیارد تومان</span></div>
+                <div class="info-row"><span class="info-label">مبلغ هر متر</span><span class="info-value">۷۰ میلیون تومان</span></div>
+                <div class="info-row"><span class="info-label">متراژ</span><span class="info-value">۱۲۰ مترمربع</span></div>
+                <div class="info-row"><span class="info-label">اتاق خواب</span><span class="info-value">۲</span></div>
+                <div class="info-row"><span class="info-label">سرویس</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">پارکینگ</span><span class="info-value">۱</span></div>
+                <div class="info-row"><span class="info-label">نوع سرویس</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">سرویس مستر</span><span class="info-value">ندارد</span></div>
+                <div class="info-row"><span class="info-label">نوع کابینت</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">نوع گرمایش</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">نوع سرمایش</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">نوع کف‌پوش</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">وضعیت بازسازی</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">جهت ساختمان</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">نوع سند</span><span class="info-value">—</span></div>
+              </div>
+              <div class="feature-list" aria-label="امکانات ملک"><span class="feature-chip">انباری</span><span class="feature-chip">آسانسور</span><span class="feature-chip">بالکن</span></div>
+            </section>
+
+            <section class="info-card">
+              <div class="info-card-head"><h2>نشانی</h2></div>
+              <div class="info-list">
+                <div class="info-row"><span class="info-label">شهر</span><span class="info-value">تهران</span></div>
+                <div class="info-row"><span class="info-label">محله</span><span class="info-value">نیاوران</span></div>
+                <div class="info-row"><span class="info-label">نشانی</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">پلاک</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">وضعیت تخلیه</span><span class="info-value">—</span></div>
+              </div>
+            </section>
+
+            <section class="info-card">
+              <div class="info-card-head"><h2>مالکان</h2></div>
+              <div class="owner-card"><span class="owner-mark">م</span><span><h3 class="owner-name">مالک ثبت‌شده</h3><p class="owner-contact">شماره همراه و ثابت از اطلاعات مالک</p></span><button class="small-contact" type="button" aria-label="تماس با مالک" data-toast="شمارهٔ ثبت‌شدهٔ مالک برای تماس استفاده می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 13 13 0 0 0 2.9.7 2 2 0 0 1 1.6 1.9Z"/></svg></button></div>
+            </section>
+          </div>
+
+          <div class="detail-panel" data-detail-panel="property-notes" hidden><div class="detail-empty"><span class="empty-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 9h8M8 13h6"/></svg></span>در دادهٔ نمونه یادداشتی دریافت نشده است.</div></div>
+          <div class="detail-panel" data-detail-panel="property-images" hidden><div class="detail-empty"><span class="empty-icon"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></span>تصاویر دریافت‌شدهٔ ملک در این قسمت نمایش داده می‌شوند.</div></div>
+          <div class="detail-panel" data-detail-panel="property-history" hidden><div class="detail-empty"><span class="empty-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg></span>در دادهٔ نمونه سابقه‌ای دریافت نشده است.</div></div>
+        </section>
+
+        <section class="detail-page" id="customerDetailPage" aria-labelledby="customerDetailTitle" hidden>
+          <header class="detail-toolbar">
+            <button class="toolbar-button" type="button" data-back-to="customers" aria-label="بازگشت به مشتری‌ها"><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+            <h1 id="customerDetailTitle">جزئیات مشتری</h1>
+            <button class="toolbar-button" type="button" aria-label="ویرایش مشتری" data-toast="ویرایش مشتری از همین پرونده انجام می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button>
+          </header>
+
+          <section class="customer-profile">
+            <div class="profile-main"><span class="profile-mark">ع‌ر</span><span><h2>علی رضایی</h2><p>شماره همراه از پروندهٔ مشتری</p></span><span class="status-chip">فعال</span></div>
+            <div class="profile-tags"><span class="feature-chip">خرید</span><span class="feature-chip">آپارتمان</span></div>
+            <div class="profile-actions"><button class="profile-action" type="button" data-toast="شمارهٔ همراه مشتری برای تماس استفاده می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4 13 13 0 0 0 2.9.7 2 2 0 0 1 1.6 1.9Z"/></svg>تماس همراه</button><button class="profile-action secondary" type="button" data-toast="شمارهٔ ثابت مشتری برای تماس استفاده می‌شود"><svg class="icon" viewBox="0 0 24 24"><path d="M6 2h12v5H6zM5 7h14a2 2 0 0 1 2 2v7H3V9a2 2 0 0 1 2-2ZM7 16h10v6H7z"/></svg>تماس ثابت</button></div>
+          </section>
+
+          <div class="detail-tabs" role="tablist" aria-label="بخش‌های جزئیات مشتری" style="margin-top:13px">
+            <button class="detail-tab active" type="button" role="tab" aria-selected="true" data-detail-tab="customer-overview">مشخصات</button>
+            <button class="detail-tab" type="button" role="tab" aria-selected="false" data-detail-tab="customer-notes">یادداشت‌ها</button>
+            <button class="detail-tab" type="button" role="tab" aria-selected="false" data-detail-tab="customer-history">تاریخچه</button>
+          </div>
+
+          <div class="detail-panel" data-detail-panel="customer-overview">
+            <section class="info-card">
+              <div class="info-card-head"><h2>اطلاعات تماس</h2></div>
+              <div class="info-list">
+                <div class="info-row"><span class="info-label">موبایل</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">تلفن ثابت</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">ایمیل</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">روش ترجیحی</span><span class="info-value">تلفن</span></div>
+              </div>
+            </section>
+
+            <section class="info-card">
+              <div class="info-card-head"><h2>نیاز مشتری</h2></div>
+              <div class="info-list">
+                <div class="info-row"><span class="info-label">انواع ملک</span><span class="info-value">آپارتمان</span></div>
+                <div class="info-row"><span class="info-label">بودجه</span><span class="info-value">۸ تا ۱۲ میلیارد تومان</span></div>
+                <div class="info-row"><span class="info-label">محدوده</span><span class="info-value">تهران، نیاوران</span></div>
+                <div class="info-row"><span class="info-label">متراژ</span><span class="info-value">۱۰۰ تا ۱۴۰ مترمربع</span></div>
+                <div class="info-row"><span class="info-label">حداقل خواب</span><span class="info-value">۲</span></div>
+                <div class="info-row"><span class="info-label">پارکینگ</span><span class="info-value">بله</span></div>
+                <div class="info-row"><span class="info-label">انباری</span><span class="info-value">بله</span></div>
+                <div class="info-row"><span class="info-label">نوع سرویس</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">سرویس مستر</span><span class="info-value">خیر</span></div>
+                <div class="info-row"><span class="info-label">نوع کابینت</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">نوع گرمایش</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">نوع سرمایش</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">نوع کف‌پوش</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">بازسازی</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">جهت ساختمان</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">نوع سند</span><span class="info-value">—</span></div>
+                <div class="info-row"><span class="info-label">وام</span><span class="info-value">خیر</span></div>
+                <div class="info-row"><span class="info-label">قابل معاوضه</span><span class="info-value">خیر</span></div>
+                <div class="info-row"><span class="info-label">استخر</span><span class="info-value">خیر</span></div>
+                <div class="info-row"><span class="info-label">جکوزی</span><span class="info-value">خیر</span></div>
+                <div class="info-row"><span class="info-label">سونا</span><span class="info-value">خیر</span></div>
+                <div class="info-row"><span class="info-label">تاریخ ثبت</span><span class="info-value">—</span></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="detail-panel" data-detail-panel="customer-notes" hidden><div class="detail-empty"><span class="empty-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 9h8M8 13h6"/></svg></span>در دادهٔ نمونه یادداشتی دریافت نشده است.</div></div>
+          <div class="detail-panel" data-detail-panel="customer-history" hidden><div class="detail-empty"><span class="empty-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg></span>در دادهٔ نمونه سابقه‌ای دریافت نشده است.</div></div>
+        </section>
+
+        <nav class="bottom-nav" id="bottomNav" aria-label="ناوبری اصلی">
+          <button class="nav-item active" type="button" aria-current="page" data-nav="خانه" data-view="home"><svg class="icon" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M5 10v10h14V10M9 20v-6h6v6"/></svg><span>خانه</span></button>
+          <button class="nav-item" type="button" data-nav="املاک" data-view="properties"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg><span>املاک</span></button>
+          <button class="nav-item" type="button" data-nav="مشتری‌ها" data-view="customers"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>مشتری‌ها</span></button>
+          <button class="nav-item" type="button" data-nav="گزارش‌ها" data-view="reports"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16v-4M12 16V8M16 16v-7"/></svg><span>گزارش‌ها</span></button>
+          <button class="nav-item" type="button" data-nav="پروفایل" data-view="profile"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>پروفایل</span></button>
+        </nav>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="profileEditDialog" role="dialog" aria-modal="true" aria-labelledby="profileEditTitle" hidden>
+    <form class="modal" id="profileEditForm">
+      <div class="modal-head"><h2 id="profileEditTitle">ویرایش مشخصات</h2><button class="close" type="button" data-close-profile-dialog aria-label="بستن ویرایش مشخصات"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+      <div class="field"><label for="profileEditName">نام</label><input id="profileEditName" name="name" value="نسترن" autocomplete="name" required></div>
+      <div class="field"><label for="profileEditEmail">ایمیل</label><input id="profileEditEmail" name="email" type="email" inputmode="email" autocomplete="email" required></div>
+      <div class="field"><label for="profileEditPhone">تلفن</label><input id="profileEditPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel"></div>
+      <div class="profile-modal-actions"><button class="profile-modal-submit" type="submit">ثبت</button><button class="profile-modal-cancel" type="button" data-close-profile-dialog>انصراف</button></div>
+    </form>
+  </div>
+
+  <div class="modal-backdrop" id="passwordChangeDialog" role="dialog" aria-modal="true" aria-labelledby="passwordChangeTitle" hidden>
+    <form class="modal" id="passwordChangeForm">
+      <div class="modal-head"><h2 id="passwordChangeTitle">تغییر رمز عبور</h2><button class="close" type="button" data-close-profile-dialog aria-label="بستن تغییر رمز عبور"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+      <div class="field"><label for="currentPassword">رمز فعلی</label><input id="currentPassword" name="current_password" type="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="newPassword">رمز جدید (حداقل ۱۲ نویسه)</label><input id="newPassword" name="password" type="password" autocomplete="new-password" minlength="12" required></div>
+      <div class="field"><label for="confirmPassword">تکرار رمز جدید</label><input id="confirmPassword" name="password_confirmation" type="password" autocomplete="new-password" minlength="12" required></div>
+      <p class="password-help">رمز جدید باید شامل حرف کوچک، حرف بزرگ، عدد و نویسهٔ ویژه باشد.</p>
+      <div class="profile-modal-actions"><button class="profile-modal-submit" type="submit">ثبت</button><button class="profile-modal-cancel" type="button" data-close-profile-dialog>انصراف</button></div>
+    </form>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const toast = document.getElementById('toast');
+    let toastTimer;
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    document.querySelectorAll('[data-toast]').forEach((button) => {
+      button.addEventListener('click', () => showToast(button.dataset.toast));
+    });
+
+    const runReport = document.getElementById('runReport');
+    runReport.addEventListener('click', () => {
+      const label = runReport.querySelector('span');
+      runReport.disabled = true;
+      label.textContent = 'در حال به‌روزرسانی…';
+      setTimeout(() => {
+        runReport.disabled = false;
+        label.textContent = 'اجرای گزارش';
+        showToast('گزارش بازهٔ انتخاب‌شده به‌روزرسانی شد');
+      }, 700);
+    });
+
+    function applyFilterGroup(group) {
+      const lists = group.dataset.list.split(',').map((id) => document.getElementById(id.trim())).filter(Boolean);
+      const activeFilter = group.querySelector('.filter.active')?.dataset.filter || 'all';
+      const searchInput = group.dataset.searchInput ? document.getElementById(group.dataset.searchInput) : null;
+      const query = searchInput?.value.trim().toLocaleLowerCase('fa') || '';
+      let visibleCount = 0;
+      lists.forEach((list) => {
+        list.querySelectorAll('[data-kind]').forEach((card) => {
+          const kinds = card.dataset.kind.split(' ');
+          const matchesKind = activeFilter === 'all' || kinds.includes(activeFilter);
+          const matchesSearch = !query || (card.dataset.search || card.textContent).toLocaleLowerCase('fa').includes(query);
+          card.hidden = !matchesKind || !matchesSearch;
+          if (!card.hidden) visibleCount += 1;
+        });
+      });
+      if (group.dataset.empty) document.getElementById(group.dataset.empty).hidden = visibleCount > 0;
+    }
+
+    document.querySelectorAll('.filters[data-list]').forEach((group) => {
+      group.querySelectorAll('.filter').forEach((button) => {
+        button.addEventListener('click', () => {
+          group.querySelectorAll('.filter').forEach((item) => item.classList.remove('active'));
+          button.classList.add('active');
+          applyFilterGroup(group);
+        });
+      });
+      const searchInput = group.dataset.searchInput ? document.getElementById(group.dataset.searchInput) : null;
+      searchInput?.addEventListener('input', () => applyFilterGroup(group));
+    });
+
+    const propertyViewToggle = document.getElementById('propertyViewToggle');
+    const visualPropertyList = document.getElementById('fullPropertyList');
+    const appPropertyList = document.getElementById('appPropertyList');
+    const propertyViewStorageKey = 'melkban-property-card-view';
+    function setPropertyView(mode, announce = false) {
+      const appMode = mode !== 'visual';
+      appPropertyList.hidden = !appMode;
+      visualPropertyList.hidden = appMode;
+      propertyViewToggle.classList.toggle('app-mode', appMode);
+      propertyViewToggle.setAttribute('aria-pressed', String(appMode));
+      const label = appMode ? 'تغییر به نمایش تصویری' : 'تغییر به نمایش کارت فعلی اپ';
+      propertyViewToggle.setAttribute('aria-label', label);
+      propertyViewToggle.title = label;
+      try { localStorage.setItem(propertyViewStorageKey, appMode ? 'app' : 'visual'); } catch (_) {}
+      if (announce) showToast(appMode ? 'نمای کارت فعلی اپ فعال شد' : 'نمای تصویری فعال شد');
+    }
+    let savedPropertyView = 'app';
+    try { savedPropertyView = localStorage.getItem(propertyViewStorageKey) || 'app'; } catch (_) {}
+    setPropertyView(savedPropertyView);
+    propertyViewToggle.addEventListener('click', () => {
+      setPropertyView(appPropertyList.hidden ? 'app' : 'visual', true);
+    });
+
+    const customerSearch = document.getElementById('customerSearch');
+    customerSearch.addEventListener('input', () => {
+      const query = customerSearch.value.trim().toLocaleLowerCase('fa');
+      let visibleCount = 0;
+      document.querySelectorAll('#customerList .customer-card').forEach((card) => {
+        card.hidden = !!query && !(card.dataset.search || card.textContent).toLocaleLowerCase('fa').includes(query);
+        if (!card.hidden) visibleCount += 1;
+      });
+      document.getElementById('customerEmpty').hidden = visibleCount > 0;
+    });
+
+    document.querySelectorAll('[data-clear-search]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.clearSearch);
+        input.value = '';
+        input.dispatchEvent(new Event('input'));
+        input.focus();
+      });
+    });
+
+    function scrollToPreviewTop() {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.querySelector('.phone').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    }
+
+    function showView(view) {
+      document.querySelectorAll('.home-view').forEach((element) => { element.hidden = view !== 'home'; });
+      document.getElementById('propertiesPage').hidden = view !== 'properties';
+      document.getElementById('customersPage').hidden = view !== 'customers';
+      document.getElementById('reportsPage').hidden = view !== 'reports';
+      document.getElementById('profilePage').hidden = view !== 'profile';
+      document.getElementById('propertyFormPage').hidden = true;
+      document.getElementById('customerFormPage').hidden = true;
+      document.getElementById('propertyDetailPage').hidden = true;
+      document.getElementById('customerDetailPage').hidden = true;
+      document.getElementById('bottomNav').hidden = false;
+      scrollToPreviewTop();
+    }
+
+    document.querySelectorAll('.nav-item').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!button.dataset.view) {
+          showToast(`بخش «${button.dataset.nav}» در مرحلهٔ بعد طراحی می‌شود`);
+          return;
+        }
+        document.querySelectorAll('.nav-item').forEach((item) => { item.classList.remove('active'); item.removeAttribute('aria-current'); });
+        button.classList.add('active');
+        button.setAttribute('aria-current', 'page');
+        showView(button.dataset.view);
+      });
+    });
+
+    document.querySelectorAll('[data-go-view]').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.querySelector(`.nav-item[data-view="${button.dataset.goView}"]`)?.click();
+      });
+    });
+
+    function showDetail(kind) {
+      document.querySelectorAll('.home-view').forEach((element) => { element.hidden = true; });
+      document.getElementById('propertiesPage').hidden = true;
+      document.getElementById('customersPage').hidden = true;
+      document.getElementById('reportsPage').hidden = true;
+      document.getElementById('profilePage').hidden = true;
+      document.getElementById('propertyFormPage').hidden = true;
+      document.getElementById('customerFormPage').hidden = true;
+      document.getElementById('propertyDetailPage').hidden = kind !== 'property';
+      document.getElementById('customerDetailPage').hidden = kind !== 'customer';
+      document.getElementById('bottomNav').hidden = false;
+      scrollToPreviewTop();
+    }
+
+    document.querySelectorAll('[data-open-detail]').forEach((button) => {
+      button.addEventListener('click', () => showDetail(button.dataset.openDetail));
+    });
+
+    document.querySelectorAll('[data-back-to]').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.querySelector(`.nav-item[data-view="${button.dataset.backTo}"]`)?.click();
+      });
+    });
+
+    document.querySelectorAll('[data-detail-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const detailPage = button.closest('.detail-page');
+        detailPage.querySelectorAll('[data-detail-tab]').forEach((tab) => {
+          tab.classList.remove('active');
+          tab.setAttribute('aria-selected', 'false');
+        });
+        detailPage.querySelectorAll('[data-detail-panel]').forEach((panel) => { panel.hidden = true; });
+        button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+        detailPage.querySelector(`[data-detail-panel="${button.dataset.detailTab}"]`).hidden = false;
+      });
+    });
+
+    const formPages = {
+      property: document.getElementById('propertyFormPage'),
+      customer: document.getElementById('customerFormPage'),
+    };
+    const formTitles = {
+      property: ['اطلاعات اصلی', 'مبلغ و نشانی', 'مشخصات ساختمان', 'مالک و تأیید'],
+      customer: ['اطلاعات تماس', 'نوع نیاز', 'ویژگی‌های موردنظر', 'محدوده و بودجه', 'توضیحات و تأیید'],
+    };
+    let formReturnView = 'home';
+    let formOpener;
+
+    function persianNumber(value) {
+      return String(value).replace(/\d/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit]);
+    }
+
+    function setConditionalVisibility(element, visible) {
+      if (!element) return;
+      element.hidden = !visible;
+      element.querySelectorAll('input, select, textarea, button').forEach((control) => {
+        control.disabled = !visible;
+      });
+    }
+
+    function setFormStep(form, step, shouldScroll = true) {
+      const titles = formTitles[form.dataset.formKind];
+      const nextStep = Math.max(0, Math.min(step, titles.length - 1));
+      form.dataset.currentStep = String(nextStep);
+      form.querySelectorAll('[data-form-panel]').forEach((panel) => { panel.hidden = Number(panel.dataset.formPanel) !== nextStep; });
+      form.querySelectorAll('[data-form-step]').forEach((button) => {
+        const index = Number(button.dataset.formStep);
+        button.classList.toggle('active', index === nextStep);
+        button.classList.toggle('done', index < nextStep);
+        if (index === nextStep) button.setAttribute('aria-current', 'step');
+        else button.removeAttribute('aria-current');
+      });
+      form.querySelector('[data-form-caption]').textContent = titles[nextStep];
+      form.querySelector('[data-form-count]').textContent = `مرحله ${persianNumber(nextStep + 1)} از ${persianNumber(titles.length)}`;
+      form.querySelector('.form-progress-value').style.setProperty('--progress', `${((nextStep + 1) / titles.length) * 100}%`);
+      form.querySelector('[data-form-prev]').hidden = nextStep === 0;
+      const nextLabel = form.querySelector('[data-form-next] span');
+      nextLabel.textContent = nextStep === titles.length - 1
+        ? (form.dataset.formKind === 'property' ? 'ذخیره ملک' : 'ذخیره مشتری')
+        : 'مرحله بعد';
+      if (shouldScroll) scrollToPreviewTop();
+    }
+
+    function hideAllSurfaces() {
+      document.querySelectorAll('.home-view').forEach((element) => { element.hidden = true; });
+      ['propertiesPage', 'customersPage', 'reportsPage', 'profilePage', 'propertyDetailPage', 'customerDetailPage', 'propertyFormPage', 'customerFormPage'].forEach((id) => {
+        document.getElementById(id).hidden = true;
+      });
+    }
+
+    function showForm(kind, opener) {
+      const activeView = document.querySelector('.nav-item.active')?.dataset.view;
+      formReturnView = activeView || 'home';
+      formOpener = opener;
+      hideAllSurfaces();
+      document.getElementById('bottomNav').hidden = true;
+      formPages[kind].hidden = false;
+      const form = formPages[kind].querySelector('form');
+      setFormStep(form, 0, false);
+      if (kind === 'property') syncPropertyForm();
+      if (kind === 'customer') syncCustomerForm();
+      scrollToPreviewTop();
+      setTimeout(() => form.querySelector('input:not(:disabled), select:not(:disabled)')?.focus(), 180);
+    }
+
+    function closeRecordForm() {
+      document.querySelector(`.nav-item[data-view="${formReturnView}"]`)?.click();
+      setTimeout(() => formOpener?.focus(), 0);
+    }
+
+    document.querySelectorAll('#newProperty, [data-open-property]').forEach((button) => {
+      button.addEventListener('click', () => showForm('property', button));
+    });
+    document.querySelectorAll('[data-open-customer]').forEach((button) => {
+      button.addEventListener('click', () => showForm('customer', button));
+    });
+    document.querySelectorAll('[data-close-form]').forEach((button) => button.addEventListener('click', closeRecordForm));
+
+    document.querySelectorAll('.record-form').forEach((form) => {
+      form.querySelectorAll('[data-form-step]').forEach((button) => {
+        button.addEventListener('click', () => setFormStep(form, Number(button.dataset.formStep)));
+      });
+      form.querySelector('[data-form-prev]').addEventListener('click', () => {
+        setFormStep(form, Number(form.dataset.currentStep || 0) - 1);
+      });
+      form.querySelector('[data-form-next]').addEventListener('click', () => {
+        const currentStep = Number(form.dataset.currentStep || 0);
+        const currentPanel = form.querySelector(`[data-form-panel="${currentStep}"]`);
+        const invalid = [...currentPanel.querySelectorAll('input, select, textarea')].find((control) => !control.disabled && !control.checkValidity());
+        if (invalid) {
+          invalid.reportValidity();
+          return;
+        }
+        const lastStep = formTitles[form.dataset.formKind].length - 1;
+        if (currentStep < lastStep) {
+          setFormStep(form, currentStep + 1);
+          return;
+        }
+        const allPanels = [...form.querySelectorAll('[data-form-panel]')];
+        for (const panel of allPanels) {
+          const invalidControl = [...panel.querySelectorAll('input, select, textarea')].find((control) => !control.disabled && !control.checkValidity());
+          if (invalidControl) {
+            setFormStep(form, Number(panel.dataset.formPanel));
+            setTimeout(() => invalidControl.reportValidity(), 0);
+            return;
+          }
+        }
+        showToast(form.dataset.formKind === 'property' ? 'نمونهٔ ثبت ملک تکمیل شد' : 'نمونهٔ ثبت مشتری تکمیل شد');
+        form.reset();
+        if (form.dataset.formKind === 'property') syncPropertyForm();
+        else syncCustomerForm();
+        closeRecordForm();
+      });
+      form.addEventListener('submit', (event) => event.preventDefault());
+    });
+
+    const propertyTransaction = document.getElementById('propertyTransaction');
+    const propertyType = document.getElementById('propertyType');
+    const propertyDelivery = document.getElementById('propertyDelivery');
+    const propertyConvertible = document.getElementById('propertyConvertible');
+    const saleDeliveryOptions = [['owner_occupied', 'مالک ساکن'], ['tenant_occupied', 'مستأجر ساکن'], ['ready', 'آماده تحویل'], ['vacated', 'تخلیه‌شده']];
+    const rentDeliveryOptions = [['ready', 'آماده تحویل'], ['vacated', 'تخلیه‌شده'], ['dated', 'دارای تاریخ تخلیه']];
+
+    function syncPropertyForm() {
+      const isLand = propertyType.value === 'land_old_building';
+      const rentOption = propertyTransaction.querySelector('option[value="rent"]');
+      rentOption.disabled = isLand;
+      if (isLand) propertyTransaction.value = 'sale';
+      const isSale = propertyTransaction.value === 'sale';
+      const previousDelivery = propertyDelivery.value;
+      const deliveryOptions = isSale ? saleDeliveryOptions : rentDeliveryOptions;
+      propertyDelivery.replaceChildren(...deliveryOptions.map(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        return option;
+      }));
+      propertyDelivery.value = deliveryOptions.some(([value]) => value === previousDelivery) ? previousDelivery : 'ready';
+      document.querySelectorAll('[data-property-transaction-panel]').forEach((panel) => setConditionalVisibility(panel, panel.dataset.propertyTransactionPanel === (isSale ? 'sale' : 'rent')));
+      document.querySelectorAll('[data-property-sale-only]').forEach((element) => setConditionalVisibility(element, isSale));
+      setConditionalVisibility(document.querySelector('[data-property-land]'), isLand);
+      setConditionalVisibility(document.querySelector('[data-property-building]'), !isLand);
+      setConditionalVisibility(document.querySelector('[data-property-house]'), !isLand && ['house', 'villa'].includes(propertyType.value));
+      setConditionalVisibility(document.querySelector('[data-property-industrial]'), !isLand && propertyType.value === 'industrial');
+      syncPropertyDelivery();
+      setConditionalVisibility(document.querySelector('[data-minimum-deposit]'), !isSale && propertyConvertible.checked);
+    }
+
+    function syncPropertyDelivery() {
+      const isSale = propertyTransaction.value === 'sale';
+      const delivery = propertyDelivery.value;
+      setConditionalVisibility(document.querySelector('[data-sale-tenant-fields]'), isSale && delivery === 'tenant_occupied');
+      const needsDate = (isSale && ['ready', 'tenant_occupied'].includes(delivery)) || (!isSale && delivery === 'dated');
+      const dateField = document.querySelector('[data-delivery-date]');
+      setConditionalVisibility(dateField, needsDate);
+      const dateInput = dateField.querySelector('input');
+      dateInput.required = needsDate;
+      document.querySelector('[data-delivery-date-label]').textContent = isSale && delivery === 'ready' ? 'تاریخ آماده تحویل' : 'تاریخ تخلیه';
+    }
+
+    propertyTransaction.addEventListener('change', syncPropertyForm);
+    propertyType.addEventListener('change', syncPropertyForm);
+    propertyDelivery.addEventListener('change', syncPropertyDelivery);
+    propertyConvertible.addEventListener('change', () => setConditionalVisibility(document.querySelector('[data-minimum-deposit]'), propertyTransaction.value === 'rent' && propertyConvertible.checked));
+
+    const customerIntent = document.getElementById('customerIntent');
+    const customerPropertyType = document.getElementById('customerPropertyType');
+    function syncCustomerForm() {
+      const isLand = customerPropertyType.value === 'land_old_building';
+      const rentOption = customerIntent.querySelector('option[value="rent"]');
+      rentOption.disabled = isLand;
+      if (isLand) customerIntent.value = 'buy';
+      const isRent = customerIntent.value === 'rent';
+      const isIndustrial = customerPropertyType.value === 'industrial';
+      setConditionalVisibility(document.querySelector('[data-customer-rent-only]'), isRent);
+      setConditionalVisibility(document.querySelector('[data-customer-buy-only]'), !isRent);
+      setConditionalVisibility(document.querySelector('[data-customer-house]'), ['house', 'villa'].includes(customerPropertyType.value));
+      setConditionalVisibility(document.querySelector('[data-customer-industrial]'), isIndustrial);
+      setConditionalVisibility(document.querySelector('[data-customer-general-area]'), !isIndustrial);
+      setConditionalVisibility(document.querySelector('[data-customer-master]'), !isRent || customerPropertyType.value === 'apartment');
+      setConditionalVisibility(document.querySelector('[data-customer-budget-buy]'), !isRent);
+      setConditionalVisibility(document.querySelector('[data-customer-budget-rent]'), isRent);
+    }
+    customerIntent.addEventListener('change', syncCustomerForm);
+    customerPropertyType.addEventListener('change', syncCustomerForm);
+    syncPropertyForm();
+    syncCustomerForm();
+
+    let activeProfileDialog = null;
+    let profileDialogOpener = null;
+    function openProfileDialog(dialog, opener) {
+      activeProfileDialog = dialog;
+      profileDialogOpener = opener;
+      dialog.hidden = false;
+      requestAnimationFrame(() => {
+        dialog.classList.add('open');
+        dialog.querySelector('input')?.focus();
+      });
+    }
+    function closeProfileDialog() {
+      const dialog = activeProfileDialog;
+      if (!dialog) return;
+      dialog.classList.remove('open');
+      activeProfileDialog = null;
+      setTimeout(() => { if (!dialog.classList.contains('open')) dialog.hidden = true; }, 210);
+      profileDialogOpener?.focus();
+    }
+    document.querySelectorAll('[data-open-profile-dialog]').forEach((button) => {
+      button.addEventListener('click', () => openProfileDialog(document.getElementById(button.dataset.openProfileDialog), button));
+    });
+    document.querySelectorAll('[data-close-profile-dialog]').forEach((button) => button.addEventListener('click', closeProfileDialog));
+    document.querySelectorAll('#profileEditDialog, #passwordChangeDialog').forEach((dialog) => {
+      dialog.addEventListener('click', (event) => { if (event.target === dialog) closeProfileDialog(); });
+    });
+
+    document.getElementById('profileEditForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      const values = new FormData(event.currentTarget);
+      const name = String(values.get('name') || '').trim();
+      const email = String(values.get('email') || '').trim();
+      const phone = String(values.get('phone') || '').trim();
+      document.getElementById('profileDisplayName').textContent = name;
+      document.getElementById('profileDisplayEmail').textContent = email || '—';
+      document.getElementById('profileDisplayPhone').textContent = phone || '—';
+      document.querySelector('.account-avatar').textContent = name.charAt(0) || 'ک';
+      closeProfileDialog();
+      showToast('نمونهٔ ویرایش مشخصات ثبت شد');
+    });
+
+    const newPassword = document.getElementById('newPassword');
+    const confirmPassword = document.getElementById('confirmPassword');
+    [newPassword, confirmPassword].forEach((input) => input.addEventListener('input', () => {
+      newPassword.setCustomValidity('');
+      confirmPassword.setCustomValidity('');
+    }));
+    document.getElementById('passwordChangeForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const password = newPassword.value;
+      const strong = password.length >= 12 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password);
+      if (!strong) newPassword.setCustomValidity('رمز جدید باید حداقل ۱۲ نویسه و شامل حرف کوچک، حرف بزرگ، عدد و نویسهٔ ویژه باشد.');
+      if (password !== confirmPassword.value) confirmPassword.setCustomValidity('تکرار رمز جدید یکسان نیست.');
+      if (!event.currentTarget.reportValidity()) return;
+      closeProfileDialog();
+      event.currentTarget.reset();
+      showToast('نمونهٔ تغییر رمز تکمیل شد');
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (activeProfileDialog) closeProfileDialog();
+      else if (!formPages.property.hidden || !formPages.customer.hidden) closeRecordForm();
+    });
+    document.getElementById('focusDemo').addEventListener('click', () => showToast('رنگ‌های متنوع برای دسته‌بندی‌اند، نه برای شلوغ‌کردن صفحه'));
+  </script>
+</body>
+</html>
