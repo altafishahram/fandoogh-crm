@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Owner\Services;
 
+use App\Application\Geography\Services\LocationValidator;
 use App\Application\Owner\Contracts\OwnerRepositoryContract;
 use App\Application\Owner\Data\OwnerData;
 use App\Application\Shared\Services\OptimisticLock;
@@ -25,7 +26,7 @@ final readonly class UpdateOwnerService
     {
         $this->optimisticLock->assertCurrent($owner, $expectedUpdatedAt);
         $this->validator->validate($data);
-        $attributes = $data->attributes();
+        $attributes = app(LocationValidator::class)->normalize($data->attributes());
 
         if ($actor->roleName() === RoleName::Agent) {
             foreach (['owner_type', 'first_name', 'last_name', 'company_name', 'identity_number_encrypted'] as $field) {

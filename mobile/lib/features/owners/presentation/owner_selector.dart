@@ -1,3 +1,4 @@
+import 'package:fandoogh_crm/features/geography/geography.dart';
 import 'dart:async';
 
 import 'package:fandoogh_crm/core/network/api_client.dart';
@@ -118,6 +119,13 @@ final class _OwnerFormDialogState extends ConsumerState<_OwnerFormDialog> {
   final _company = TextEditingController();
   final _mobile = TextEditingController();
   final _email = TextEditingController();
+  late RegionSelection _region;
+  @override
+  void initState() {
+    super.initState();
+    _region = agencyRegion(ref);
+  }
+
   String _type = 'person';
   bool _busy = false;
   String? _error;
@@ -165,6 +173,11 @@ final class _OwnerFormDialogState extends ConsumerState<_OwnerFormDialog> {
             _field(_mobile, 'موبایل'),
             const SizedBox(height: 12),
             _field(_email, 'ایمیل'),
+            const SizedBox(height: 12),
+            RegionFields(
+              value: _region,
+              onChanged: (value) => setState(() => _region = value),
+            ),
             if (_error != null) ...<Widget>[
               const SizedBox(height: 8),
               Text(
@@ -217,6 +230,7 @@ final class _OwnerFormDialogState extends ConsumerState<_OwnerFormDialog> {
       final result = await ApiRepository(ref.read(apiClientProvider))
           .post('/owners', <String, Object?>{
             'owner_type': _type,
+            ..._region.toJson(),
             if (_type == 'person') 'first_name': _first.text.trim(),
             if (_type == 'person') 'last_name': _last.text.trim(),
             if (_type == 'company') 'company_name': _company.text.trim(),

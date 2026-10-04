@@ -22,4 +22,16 @@ final class OptimisticLock
             ]);
         }
     }
+
+    public function assertVersion(Model $model, int $expected): void
+    {
+        $current = (int) $model->getAttribute('lock_version');
+        if ($current !== $expected) {
+            throw new StaleRecordException('این رکورد پس از بارگذاری تغییر کرده است.', [
+                'id' => $model->getKey(),
+                'lock_version' => $current,
+                'updated_at' => $model->getAttribute('updated_at')?->toISOString(),
+            ]);
+        }
+    }
 }

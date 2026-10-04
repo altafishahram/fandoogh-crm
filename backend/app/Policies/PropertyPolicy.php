@@ -19,9 +19,7 @@ final class PropertyPolicy
     public function view(User $user, Property $property): bool
     {
         return $this->viewAny($user)
-            && $user->agency_id === $property->agency_id
-            && ($user->roleName() === RoleName::AgencyManager
-                || $property->assigned_agent_id === $user->getKey());
+            && $user->agency_id === $property->agency_id;
     }
 
     public function create(User $user): bool
@@ -47,16 +45,63 @@ final class PropertyPolicy
             && $user->can(PermissionName::PropertiesManageImages->value);
     }
 
+    public function viewImages(User $user, Property $property): bool
+    {
+        return $this->view($user, $property)
+            && $user->can(PermissionName::PropertyImagesView->value);
+    }
+
+    public function createImages(User $user, Property $property): bool
+    {
+        return $this->view($user, $property)
+            && $user->can(PermissionName::PropertyImagesCreate->value);
+    }
+
+    public function updateImages(User $user, Property $property): bool
+    {
+        return $this->view($user, $property)
+            && $user->can(PermissionName::PropertyImagesUpdate->value);
+    }
+
+    public function deleteImages(User $user, Property $property): bool
+    {
+        return $this->view($user, $property)
+            && $user->can(PermissionName::PropertyImagesDelete->value);
+    }
+
     public function manageNotes(User $user, Property $property): bool
     {
         return $this->view($user, $property)
             && $user->can(PermissionName::PropertiesManageNotes->value);
     }
 
+    public function viewNotes(User $user, Property $property): bool
+    {
+        return $this->view($user, $property)
+            && $user->can(PermissionName::PropertyNotesView->value);
+    }
+
+    public function createNotes(User $user, Property $property): bool
+    {
+        return $this->view($user, $property)
+            && $user->can(PermissionName::PropertyNotesCreate->value);
+    }
+
+    public function updateNotes(User $user, Property $property): bool
+    {
+        return $this->view($user, $property)
+            && $user->can(PermissionName::PropertyNotesUpdate->value);
+    }
+
+    public function deleteNotes(User $user, Property $property): bool
+    {
+        return $this->view($user, $property)
+            && $user->can(PermissionName::PropertyNotesDelete->value);
+    }
+
     public function assign(User $user, Property $property): bool
     {
         return $user->is_active
-            && $user->roleName() === RoleName::AgencyManager
             && $user->agency_id === $property->agency_id
             && $user->can(PermissionName::PropertiesAssign->value);
     }
@@ -64,7 +109,6 @@ final class PropertyPolicy
     public function delete(User $user, Property $property): bool
     {
         return $user->is_active
-            && $user->roleName() === RoleName::AgencyManager
             && $user->agency_id === $property->agency_id
             && $user->can(PermissionName::PropertiesDelete->value);
     }

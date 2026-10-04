@@ -14,6 +14,7 @@ use App\Domain\Tenancy\Exceptions\TenantMismatchException;
 use App\Domain\User\Exceptions\InvalidCredentialsException;
 use App\Domain\User\Exceptions\PasswordChangeRequiredException;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnsureIdempotentClientOperation;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EstablishTenantContext;
 use App\Http\Responses\ApiExceptionRenderer;
@@ -33,12 +34,17 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         then: static function (): void {
             Route::get('/up', static fn () => response()->json([
-                'name' => 'ملک بان',
+                'name' => config('app.name'),
                 'status' => 'ok',
             ]))->name('health');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(
+            static fn (Request $request): ?string => $request->is('api/*')
+                ? null
+                : (Route::has('login') ? route('login') : '/agent/login'),
+        );
         $middleware->prepend(AssignRequestId::class);
         $middleware->prependToPriorityList(SubstituteBindings::class, EstablishTenantContext::class);
         $middleware->alias([
@@ -46,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ability' => CheckForAnyAbility::class,
             'password.changed' => EnsurePasswordChanged::class,
             'tenant' => EstablishTenantContext::class,
+            'idempotent' => EnsureIdempotentClientOperation::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

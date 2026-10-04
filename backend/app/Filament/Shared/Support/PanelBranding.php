@@ -13,10 +13,11 @@ final class PanelBranding
     public static function apply(Panel $panel, string $section): Panel
     {
         return $panel
-            ->brandName("ملک بان · {$section}")
+            ->brandName(config('app.name')." · {$section}")
+            ->sidebarWidth('16rem')
             ->colors([
-                'primary' => Color::Emerald,
-                'gray' => Color::Slate,
+                'primary' => Color::hex('#0F766E'),
+                'gray' => Color::hex('#68817E'),
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
@@ -25,6 +26,10 @@ final class PanelBranding
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_FOOTER,
                 static fn () => view('filament.shared.brand-credit'),
+            )
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                static fn () => view('filament.shared.match-notification-host'),
             )
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,

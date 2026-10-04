@@ -55,7 +55,8 @@ final class OperationalAggregateHardeningTest extends DomainTestCase
         $reportQueries = count(DB::connection()->getQueryLog());
         DB::connection()->disableQueryLog();
 
-        $this->assertLessThanOrEqual(10, $dashboardQueries);
+        // Recent properties, notes, and one fresh per-user match-summary batch stay bounded.
+        $this->assertLessThanOrEqual(12, $dashboardQueries);
         $this->assertLessThanOrEqual(12, $reportQueries);
     }
 }

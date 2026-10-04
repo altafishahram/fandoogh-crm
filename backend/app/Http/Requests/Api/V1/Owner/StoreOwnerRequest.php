@@ -20,6 +20,7 @@ class StoreOwnerRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'province_id' => ['nullable', 'integer'], 'county_id' => ['nullable', 'integer'], 'city_id' => ['nullable', 'integer'],
             'agency_id' => ['prohibited'], 'created_by_user_id' => ['prohibited'],
             'owner_type' => ['required', Rule::enum(OwnerType::class)],
             'first_name' => ['nullable', 'required_if:owner_type,person', 'string', 'max:100'],
@@ -57,6 +58,9 @@ class StoreOwnerRequest extends FormRequest
             $data['province'] ?? null,
             $data['postal_code'] ?? null,
             $data['notes'] ?? null,
+            isset($data['province_id']) ? (int) $data['province_id'] : null,
+            isset($data['county_id']) ? (int) $data['county_id'] : null,
+            isset($data['city_id']) ? (int) $data['city_id'] : null,
         );
     }
 }

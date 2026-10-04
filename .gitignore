@@ -33,3 +33,13 @@ Thumbs.db
 # Local VPS evidence and UAT records contain infrastructure identifiers.
 /SERVER_DEPLOYMENT_*.md
 /PHASE_5_INTERNAL_UAT_FA.md
+
+# Private local recovery evidence; never commit raw database logs.
+/artifacts/recovery-20261003/
+
+# Generated local delivery and diagnostic evidence; source reports remain tracked.
+/artifacts/*
+!/artifacts/RELEASE-NOTES-FA.md
+/scripts/__pycache__/
+/backend/storage/framework/marketplace-*.php
+/backend/storage/marketplace-phpstan.json

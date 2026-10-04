@@ -21,14 +21,14 @@ final class PropertyNoteController extends Controller
 {
     public function index(Property $property): AnonymousResourceCollection
     {
-        Gate::authorize('view', $property);
+        Gate::authorize('viewNotes', $property);
 
         return NoteResource::collection($property->notes()->orderByDesc('created_at')->paginate(50));
     }
 
     public function store(NoteRequest $request, Property $property, PropertyNoteService $service): JsonResponse
     {
-        Gate::authorize('manageNotes', $property);
+        Gate::authorize('createNotes', $property);
         /** @var User $user */
         $user = $request->user();
 
@@ -43,7 +43,7 @@ final class PropertyNoteController extends Controller
         PropertyNoteService $service,
     ): NoteResource {
         $this->ensureNested($property, $note);
-        Gate::authorize('manageNotes', $property);
+        Gate::authorize('updateNotes', $property);
         Gate::authorize('update', $note);
 
         return new NoteResource($service->update($note, (string) $request->validated('body')));
@@ -56,7 +56,7 @@ final class PropertyNoteController extends Controller
         PropertyNoteService $service,
     ): Response {
         $this->ensureNested($property, $note);
-        Gate::authorize('manageNotes', $property);
+        Gate::authorize('deleteNotes', $property);
         Gate::authorize('delete', $note);
         $service->delete($note);
 

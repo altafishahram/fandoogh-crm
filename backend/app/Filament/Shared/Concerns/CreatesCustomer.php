@@ -16,7 +16,6 @@ trait CreatesCustomer
     {
         $actor = auth()->user();
         abort_unless($actor instanceof User, 401);
-        $data['assigned_agent_id'] ??= $actor->getKey();
 
         return app(CreateCustomerService::class)->execute($actor, PanelDataMapper::customerCreate($data));
     }

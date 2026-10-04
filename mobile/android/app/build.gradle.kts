@@ -63,6 +63,15 @@ android {
         create("production") {
             dimension = "distribution"
         }
+        create("publicInternal") {
+            dimension = "distribution"
+            applicationId = "com.fandoogh.publicapp.internal"
+            versionNameSuffix = "-public-internal"
+        }
+        create("publicProduction") {
+            dimension = "distribution"
+            applicationId = "com.fandoogh.publicapp"
+        }
     }
 
     signingConfigs {

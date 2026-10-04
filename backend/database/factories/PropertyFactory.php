@@ -35,7 +35,7 @@ final class PropertyFactory extends Factory
             'bathrooms' => 1,
             'floor_number' => 1,
             'total_floors' => 4,
-            'year_built' => 2020,
+            'year_built' => 1403,
             'parking_spaces' => 1,
             'has_storage_room' => false,
             'has_elevator' => true,

@@ -35,7 +35,7 @@ final class ControlPanelProvider extends PanelProvider
             ->pages([Dashboard::class])
             ->discoverWidgets(in: app_path('Filament/Control/Widgets'), for: 'App\\Filament\\Control\\Widgets')
             ->middleware($this->middleware())
-            ->authMiddleware([Authenticate::class, EstablishTenantContext::class, EnsureWebPasswordChanged::class]);
+            ->authMiddleware([Authenticate::class, EstablishTenantContext::class, EnsureWebPasswordChanged::class], isPersistent: true);
     }
 
     /** @return list<class-string> */

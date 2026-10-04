@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Filament\Shared\Concerns;
 
-use App\Application\Property\Services\SyncPropertyOwnersService;
+use App\Application\Property\Services\PropertyImageService;
+use App\Application\Property\Services\PropertyPricingCalculator;
 use App\Application\Property\Services\UpdatePropertyService;
+use App\Domain\Property\Enums\DeliveryStatus;
+use App\Domain\Property\Enums\TransactionType;
 use App\Filament\Shared\Support\PanelDataMapper;
+use App\Filament\Shared\Support\PersianDate;
 use App\Models\Property;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Http\UploadedFile;
 
 trait UpdatesProperty
 {
@@ -22,16 +26,26 @@ trait UpdatesProperty
     {
         $record = $this->getRecord();
         if ($record instanceof Property) {
-            $data['owners'] = $record->owners()->get()->map(static function ($owner): array {
-                $pivot = $owner->getRelation('pivot');
-                abort_unless($pivot instanceof Pivot, 500);
-
-                return [
-                    'owner_id' => $owner->getKey(),
-                    'ownership_percentage' => $pivot->getAttribute('ownership_percentage'),
-                    'is_primary' => (bool) $pivot->getAttribute('is_primary'),
-                ];
-            })->all();
+            $owner = $record->owners()->first();
+            $data['owner'] = $owner === null ? [] : [
+                'full_name' => $owner->full_name,
+                'mobile' => $owner->mobile,
+                'phone' => $owner->phone,
+                'notes' => $owner->notes,
+            ];
+            $deliveryDate = $record->transaction_type === TransactionType::Sale
+                && $record->delivery_status === DeliveryStatus::Ready
+                ? $record->available_from
+                : $record->evacuation_date;
+            $data['evacuation_date_display'] = $deliveryDate === null
+                ? null : PersianDate::format($deliveryDate);
+            $data['sale_price_per_sqm'] = $record->sale_price !== null && $record->area_sqm !== null
+                ? app(PropertyPricingCalculator::class)->perSquareMeter(
+                    (string) $record->sale_price,
+                    (string) $record->area_sqm,
+                ) : null;
+            $data['price_input_mode'] = 'total';
+            $data['new_images'] = [];
         }
 
         return $data;
@@ -42,11 +56,17 @@ trait UpdatesProperty
     {
         $actor = auth()->user();
         abort_unless($actor instanceof User && $record instanceof Property, 401);
+        $images = is_array($data['new_images'] ?? null) ? $data['new_images'] : [];
+        unset($data['new_images']);
         $expected = CarbonImmutable::parse((string) $record->updated_at);
         $updated = app(UpdatePropertyService::class)->execute(
             $actor, $record, PanelDataMapper::propertyUpdate($data, $expected),
         );
-        app(SyncPropertyOwnersService::class)->execute($actor, $updated, PanelDataMapper::ownerships($data));
+        foreach ($images as $image) {
+            if ($image instanceof UploadedFile && $updated->images()->count() < 5) {
+                app(PropertyImageService::class)->upload($updated, $actor, $image);
+            }
+        }
 
         return $updated->refresh();
     }

@@ -40,11 +40,13 @@ class ApiRepository {
 
   Future<Map<String, dynamic>> post(
     String path,
-    Map<String, Object?> body,
-  ) async {
+    Map<String, Object?> body, {
+    Map<String, Object?>? headers,
+  }) async {
     final response = await client.dio.post<Map<String, dynamic>>(
       path,
       data: body,
+      options: Options(headers: headers),
     );
     return unwrapData(response.data);
   }

@@ -11,6 +11,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int|null $province_id
+ * @property int|null $county_id
+ * @property int|null $city_id
+ * @property bool $is_verified
+ * @property bool $is_active
+ */
 class Agency extends Model
 {
     /** @use HasFactory<AgencyFactory> */
@@ -19,6 +26,7 @@ class Agency extends Model
     /** @var list<string> */
     protected $fillable = [
         'name',
+        'province_id', 'county_id', 'city_id',
         'slug',
         'email',
         'phone',
@@ -83,6 +91,7 @@ class Agency extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_verified' => 'boolean', 'verified_at' => 'immutable_datetime',
             'activated_at' => 'immutable_datetime',
         ];
     }

@@ -9,7 +9,7 @@ class AppLocalizationsFa extends AppLocalizations {
   AppLocalizationsFa([String locale = 'fa']) : super(locale);
 
   @override
-  String get appName => 'ملک بان';
+  String get appName => 'دفتر املاکی';
 
   @override
   String get foundationTitle => 'زیرساخت اولیه آماده است';
@@ -22,5 +22,5 @@ class AppLocalizationsFa extends AppLocalizations {
   String get foundationStatus => 'فاز صفر';
 
   @override
-  String get foundationIconLabel => 'نشان سامانه ملک بان';
+  String get foundationIconLabel => 'نشان سامانه دفتر املاکی';
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Property\Services;
 
+use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Shared\Services\AgentAssignmentValidator;
 use App\Domain\Property\Enums\PropertyHistoryAction;
 use App\Domain\Shared\Exceptions\DomainConflictException;
@@ -19,11 +20,12 @@ final readonly class RestorePropertyService
         private AgentAssignmentValidator $agents,
         private PropertyHistoryWriter $history,
         private TenantContext $tenant,
+        private MatchingRebuildDispatcher $matching,
     ) {}
 
     public function execute(User $actor, Property $property): Property
     {
-        return DB::transaction(function () use ($actor, $property): Property {
+        $restored = DB::transaction(function () use ($actor, $property): Property {
             $ownerIds = DB::table('property_owner')
                 ->where('agency_id', $this->tenant->agencyId())
                 ->where('property_id', $property->getKey())
@@ -37,9 +39,15 @@ final readonly class RestorePropertyService
             }
 
             $property->restore();
+            $property->matching_eligible_at = now();
+            $property->save();
             $this->history->write($property, $actor, PropertyHistoryAction::Restored);
 
             return $property->refresh();
         });
+
+        $this->matching->dispatchForAgency((int) $restored->agency_id);
+
+        return $restored;
     }
 }

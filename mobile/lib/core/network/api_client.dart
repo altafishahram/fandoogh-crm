@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 typedef ApiAccessHandler = void Function(ApiFailure failure);
+typedef ApiConnectivityHandler = void Function(bool isOnline);
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final client = ApiClient();
@@ -24,8 +25,16 @@ final class ApiClient {
           }
           handler.next(options);
         },
+        onResponse: (response, handler) {
+          onConnectivityChanged?.call(true);
+          handler.next(response);
+        },
         onError: (exception, handler) {
           final failure = ApiFailure.fromDioException(exception);
+          if (failure.code == 'NETWORK_UNAVAILABLE' ||
+              failure.code == 'NETWORK_TIMEOUT') {
+            onConnectivityChanged?.call(false);
+          }
           if (failure.statusCode == 401 ||
               failure.code == 'AGENCY_INACTIVE' ||
               failure.code == 'PASSWORD_CHANGE_REQUIRED') {
@@ -40,6 +49,7 @@ final class ApiClient {
   final Dio _dio;
   String? token;
   ApiAccessHandler? onAccessFailure;
+  ApiConnectivityHandler? onConnectivityChanged;
 
   Dio get dio => _dio;
 

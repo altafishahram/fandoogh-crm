@@ -1,5 +1,9 @@
+import 'package:fandoogh_crm/core/auth/auth_controller.dart';
+import 'package:fandoogh_crm/core/errors/api_failure.dart';
 import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/network/api_repository.dart';
+import 'package:fandoogh_crm/core/localization/persian_date.dart';
+import 'package:fandoogh_crm/core/widgets/persian_date_field.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/core/widgets/section_card.dart';
@@ -28,35 +32,60 @@ final class _ReportPageState extends ConsumerState<ReportPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('گزارش من')),
+    appBar: AppBar(title: const Text('گزارش عملکرد')),
     body: Column(
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickDate(true),
-                  icon: const Icon(Icons.date_range),
-                  label: Text('از ${_format(_from)}'),
-                ),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.date_range_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'بازه گزارش',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: PersianDateField(
+                          label: 'از تاریخ',
+                          value: _from,
+                          onChanged: (value) => setState(() => _from = value),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: PersianDateField(
+                          label: 'تا تاریخ',
+                          value: _to,
+                          onChanged: (value) => setState(() => _to = value),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  FilledButton.icon(
+                    onPressed: _load,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('اجرای گزارش'),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickDate(false),
-                  icon: const Icon(Icons.event),
-                  label: Text('تا ${_format(_to)}'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                tooltip: 'اجرای گزارش',
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-            ],
+            ),
           ),
         ),
         Expanded(child: _body()),
@@ -85,6 +114,7 @@ final class _ReportPageState extends ConsumerState<ReportPage> {
                   label: 'املاک واگذارشده',
                   value: '${data['assigned_properties'] ?? 0}',
                   icon: Icons.apartment_outlined,
+                  color: const Color(0xFF0F766E),
                 ),
               ),
               const SizedBox(width: 8),
@@ -93,6 +123,7 @@ final class _ReportPageState extends ConsumerState<ReportPage> {
                   label: 'مشتریان ایجادشده',
                   value: '${data['customers_created'] ?? 0}',
                   icon: Icons.person_add_alt,
+                  color: const Color(0xFF7557B7),
                 ),
               ),
             ],
@@ -114,24 +145,19 @@ final class _ReportPageState extends ConsumerState<ReportPage> {
     );
   }
 
-  Future<void> _pickDate(bool start) async {
-    final value = await showDatePicker(
-      context: context,
-      initialDate: start ? _from : _to,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-    );
-    if (value == null) return;
-    setState(() {
-      if (start) {
-        _from = value;
-      } else {
-        _to = value;
-      }
-    });
-  }
-
   Future<void> _load() async {
+    if (ref.read(authControllerProvider).isOffline) {
+      setState(
+        () => _report = AsyncError<Map<String, dynamic>>(
+          const ApiFailure(
+            code: 'NETWORK_UNAVAILABLE',
+            message: 'گزارش‌گیری در حالت آفلاین در دسترس نیست.',
+          ),
+          StackTrace.current,
+        ),
+      );
+      return;
+    }
     if (_from.isAfter(_to)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -142,15 +168,12 @@ final class _ReportPageState extends ConsumerState<ReportPage> {
     }
     setState(() => _report = const AsyncLoading<Map<String, dynamic>>());
     final value = await AsyncValue.guard(
-      () => ApiRepository(
-        ref.read(apiClientProvider),
-      ).getOne('/reports/me?from=${_format(_from)}&to=${_format(_to)}'),
+      () => ApiRepository(ref.read(apiClientProvider)).getOne(
+        '/reports/me?from=${PersianDate.fromGregorian(_from).isoDate}&to=${PersianDate.fromGregorian(_to).isoDate}',
+      ),
     );
     if (mounted) setState(() => _report = value);
   }
-
-  static String _format(DateTime value) =>
-      '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 }
 
 final class _MetricCard extends StatelessWidget {
@@ -158,17 +181,27 @@ final class _MetricCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
+    required this.color,
   });
   final String label;
   final String value;
   final IconData icon;
+  final Color color;
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: <Widget>[
-          Icon(icon, size: 34, color: Theme.of(context).colorScheme.primary),
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .11),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(icon, size: 26, color: color),
+          ),
           const SizedBox(height: 8),
           Text(value, style: Theme.of(context).textTheme.headlineSmall),
           Text(label, textAlign: TextAlign.center),

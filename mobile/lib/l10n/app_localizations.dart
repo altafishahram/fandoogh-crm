@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
-  /// **'ملک بان'**
+  /// **'دفتر املاکی'**
   String get appName;
 
   /// No description provided for @foundationTitle.
@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// No description provided for @foundationDescription.
   ///
   /// In en, this message translates to:
-  /// **'سامانه برای اجرای فرایندهای ملک بان آماده است.'**
+  /// **'سامانه برای اجرای فرایندهای دفتر املاکی آماده است.'**
   String get foundationDescription;
 
   /// No description provided for @foundationStatus.
@@ -125,7 +125,7 @@ abstract class AppLocalizations {
   /// No description provided for @foundationIconLabel.
   ///
   /// In en, this message translates to:
-  /// **'نشان سامانه ملک بان'**
+  /// **'نشان سامانه دفتر املاکی'**
   String get foundationIconLabel;
 }
 

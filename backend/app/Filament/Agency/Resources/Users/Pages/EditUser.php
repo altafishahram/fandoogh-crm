@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Agency\Resources\Users\Pages;
 
+use App\Application\User\Services\UpdateAgentPermissionsService;
 use App\Application\User\Services\UpdateUserService;
 use App\Filament\Agency\Resources\Users\UserResource;
 use App\Models\User;
@@ -22,15 +23,37 @@ final class EditUser extends EditRecord
         ];
     }
 
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $record = $this->getRecord();
+        if ($record instanceof User) {
+            $data['permissions'] = $record->getDirectPermissions()->pluck('name')->values()->all();
+        }
+
+        return $data;
+    }
+
     /** @param array<string, mixed> $data */
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         $actor = auth()->user();
         abort_unless($actor instanceof User && $record instanceof User, 401);
 
-        return app(UpdateUserService::class)->execute($actor, $record, [
+        $updated = app(UpdateUserService::class)->execute($actor, $record, [
             'name' => (string) $data['name'], 'email' => (string) $data['email'],
             'phone' => isset($data['phone']) ? (string) $data['phone'] : null,
         ]);
+        $permissions = is_array($data['permissions'] ?? null)
+            ? array_values(array_map('strval', $data['permissions'])) : [];
+        $current = $updated->getDirectPermissions()->pluck('name')->sort()->values()->all();
+        $requested = collect($permissions)->sort()->values()->all();
+        if ($current !== $requested) {
+            $updated = app(UpdateAgentPermissionsService::class)->execute($actor, $updated, $permissions);
+        }
+
+        return $updated;
     }
 }

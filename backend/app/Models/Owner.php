@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property OwnerType $owner_type
  * @property string|null $first_name
+ * @property string|null $full_name
  * @property string|null $last_name
  * @property string|null $company_name
  * @property string|null $mobile
@@ -24,6 +25,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $email
  * @property string|null $identity_number_encrypted
  * @property int $agency_id
+ * @property int|null $province_id
+ * @property int|null $county_id
+ * @property int|null $city_id
  * @property int $created_by_user_id
  */
 class Owner extends Model
@@ -37,9 +41,10 @@ class Owner extends Model
 
     /** @var list<string> */
     protected $fillable = [
+        'province_id', 'county_id', 'city_id',
         'owner_type', 'first_name', 'last_name', 'company_name', 'mobile', 'phone', 'email',
         'identity_number_encrypted', 'address_line_1', 'address_line_2', 'city', 'province',
-        'postal_code', 'notes', 'created_by_user_id',
+        'postal_code', 'notes', 'created_by_user_id', 'full_name',
     ];
 
     /** @return BelongsTo<User, $this> */
@@ -79,6 +84,21 @@ class Owner extends Model
         $normalized = mb_strtolower(trim((string) $value));
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    /** @return Attribute<string, string> */
+    protected function fullName(): Attribute
+    {
+        return Attribute::make(
+            get: function (mixed $value): string {
+                $stored = trim((string) $value);
+                if ($stored !== '') {
+                    return $stored;
+                }
+
+                return trim((string) ($this->company_name ?: $this->first_name.' '.$this->last_name));
+            },
+        );
     }
 
     private static function normalizePhone(mixed $value): ?string

@@ -1,8 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <!-- Temporary IP-only internal testing. The production flavor remains HTTPS-only. -->
+    <!-- Internal builds use the same HTTPS-only endpoint as production. -->
     <application
-        android:label="ملک بان (آزمایشی)"
-        android:networkSecurityConfig="@xml/network_security_config"
+        android:label="دفتر املاکی (آزمایشی)"
         tools:replace="android:label" />
 </manifest>

@@ -1,12 +1,18 @@
 import 'package:fandoogh_crm/core/auth/auth_controller.dart';
 import 'package:fandoogh_crm/core/config/app_config.dart';
+import 'package:fandoogh_crm/core/localization/persian_date.dart';
 import 'package:fandoogh_crm/core/network/api_client.dart';
+import 'package:fandoogh_crm/core/offline/sync_controller.dart';
+import 'package:fandoogh_crm/core/phone/phone_launcher.dart';
 import 'package:fandoogh_crm/core/storage/android_media_picker.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/core/widgets/section_card.dart';
 import 'package:fandoogh_crm/core/widgets/text_input_dialog.dart';
 import 'package:fandoogh_crm/features/properties/data/property_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_summary.dart';
+import 'package:fandoogh_crm/features/match_notifications/presentation/related_match_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,14 +31,24 @@ final class PropertyDetailPage extends ConsumerWidget {
           title: Text(property.value?.title ?? 'جزئیات ملک'),
           actions: <Widget>[
             IconButton(
-              tooltip: 'ویرایش ملک',
+              tooltip: 'انتشار آگهی',
               onPressed: property.hasValue
+                  ? () => context.push('/properties/$propertyId/publication')
+                  : null,
+              icon: const Icon(Icons.publish_outlined),
+            ),
+            IconButton(
+              tooltip: 'ویرایش ملک',
+              onPressed:
+                  property.hasValue &&
+                      ref.watch(authControllerProvider).can('properties.update')
                   ? () async {
                       final changed = await context.push<bool>(
                         '/properties/$propertyId/edit',
                       );
                       if (changed == true) {
                         ref.invalidate(propertyProvider(propertyId));
+                        ref.read(matchDataRevisionProvider.notifier).refresh();
                       }
                     }
                   : null,
@@ -82,7 +98,12 @@ final class _Overview extends ConsumerWidget {
         SectionCard(
           title: property.title,
           action: FilledButton.tonalIcon(
-            onPressed: () => _changeStatus(context, ref),
+            onPressed:
+                ref
+                    .watch(authControllerProvider)
+                    .can('properties.change_status')
+                ? () => _changeStatus(context, ref)
+                : null,
             icon: const Icon(Icons.sync_alt_rounded),
             label: const Text('تغییر وضعیت'),
           ),
@@ -99,6 +120,10 @@ final class _Overview extends ConsumerWidget {
                 runSpacing: 8,
                 children: <Widget>[
                   Chip(label: Text(labelOf(propertyStatuses, property.status))),
+                  RelatedMatchBadge(
+                    scope: RelatedMatchScope.property(property.id),
+                    summary: property.matchSummary,
+                  ),
                   Chip(
                     label: Text(labelOf(propertyTypes, property.propertyType)),
                   ),
@@ -122,15 +147,31 @@ final class _Overview extends ConsumerWidget {
           title: 'قیمت و مشخصات',
           child: Column(
             children: <Widget>[
-              if (property.transactionType == 'sale')
+              if (property.transactionType == 'sale') ...<Widget>[
                 _row(
                   'قیمت فروش',
                   _money(
                     property.data['sale_price'],
                     property.data['currency_code'],
                   ),
-                )
-              else ...<Widget>[
+                ),
+                if (property.data['delivery_status'] == 'tenant_occupied')
+                  _row(
+                    'ودیعه مستأجر',
+                    _money(
+                      property.data['deposit_amount'],
+                      property.data['currency_code'],
+                    ),
+                  ),
+                if (property.data['delivery_status'] == 'tenant_occupied')
+                  _row(
+                    'اجاره ماهانه مستأجر',
+                    _money(
+                      property.data['monthly_rent'],
+                      property.data['currency_code'],
+                    ),
+                  ),
+              ] else ...<Widget>[
                 _row(
                   'ودیعه',
                   _money(
@@ -147,23 +188,117 @@ final class _Overview extends ConsumerWidget {
                 ),
               ],
               _row('متراژ', _unit(property.data['area_sqm'], 'مترمربع')),
-              _row('اتاق خواب', '${property.data['bedrooms'] ?? '—'}'),
-              _row('سرویس', '${property.data['bathrooms'] ?? '—'}'),
-              _row('پارکینگ', '${property.data['parking_spaces'] ?? 0}'),
-              _row(
-                'امکانات',
-                <String>[
-                      if (property.data['has_storage_room'] == true) 'انباری',
-                      if (property.data['has_elevator'] == true) 'آسانسور',
-                      if (property.data['has_balcony'] == true) 'بالکن',
-                    ].join('، ').isEmpty
-                    ? '—'
-                    : <String>[
+              if (property.data['building_type'] != null)
+                _row(
+                  'نوع بنا',
+                  labelOf(
+                    buildingTypes,
+                    property.data['building_type'] as String?,
+                  ),
+                ),
+              if (property.propertyType == 'industrial') ...<Widget>[
+                _row('نوع سازه', '${property.data['structure_type'] ?? '—'}'),
+                _row(
+                  'آب',
+                  property.data['has_water'] == true ? 'دارد' : 'ندارد',
+                ),
+                _row(
+                  'برق',
+                  property.data['has_electricity'] == true ? 'دارد' : 'ندارد',
+                ),
+                _row(
+                  'گاز',
+                  property.data['has_gas'] == true ? 'دارد' : 'ندارد',
+                ),
+                _row(
+                  'تعداد خط تلفن',
+                  '${property.data['telephone_line_count'] ?? '—'}',
+                ),
+                _row('متراژ زمین', '${property.data['land_area'] ?? '—'}'),
+                _row('متراژ بنا', '${property.data['building_area'] ?? '—'}'),
+              ],
+              if (property.transactionType == 'sale')
+                _row(
+                  'مبلغ هر متر',
+                  formatToman(property.data['sale_price_per_sqm']),
+                ),
+              if (property.transactionType == 'rent' &&
+                  property.data['is_convertible'] == true) ...<Widget>[
+                _row(
+                  'حداقل ودیعه',
+                  formatToman(property.data['minimum_deposit']),
+                ),
+                _row(
+                  'حداکثر اجاره',
+                  formatToman(property.data['maximum_rent']),
+                ),
+              ],
+              if (property.propertyType != 'land_old_building') ...<Widget>[
+                _row('اتاق خواب', '${property.data['bedrooms'] ?? '—'}'),
+                _row('سرویس', '${property.data['bathrooms'] ?? '—'}'),
+                _row('پارکینگ', '${property.data['parking_spaces'] ?? 0}'),
+                _row(
+                  'امکانات',
+                  <String>[
                         if (property.data['has_storage_room'] == true) 'انباری',
                         if (property.data['has_elevator'] == true) 'آسانسور',
                         if (property.data['has_balcony'] == true) 'بالکن',
-                      ].join('، '),
+                      ].join('، ').isEmpty
+                      ? '—'
+                      : <String>[
+                          if (property.data['has_storage_room'] == true)
+                            'انباری',
+                          if (property.data['has_elevator'] == true) 'آسانسور',
+                          if (property.data['has_balcony'] == true) 'بالکن',
+                        ].join('، '),
+                ),
+              ],
+              _row(
+                'نوع سرویس',
+                _labels(toiletTypes, property.data['toilet_types']),
               ),
+              _row(
+                'سرویس مستر',
+                property.data['has_master_bathroom'] == true ? 'دارد' : 'ندارد',
+              ),
+              _row(
+                'نوع کابینت',
+                labelOf(cabinetTypes, property.data['cabinet_type'] as String?),
+              ),
+              _row(
+                'نوع گرمایش',
+                labelOf(heatingTypes, property.data['heating_type'] as String?),
+              ),
+              _row(
+                'نوع سرمایش',
+                labelOf(coolingTypes, property.data['cooling_type'] as String?),
+              ),
+              _row(
+                'نوع کف‌پوش',
+                labelOf(
+                  flooringTypes,
+                  property.data['flooring_type'] as String?,
+                ),
+              ),
+              _row(
+                'وضعیت بازسازی',
+                labelOf(
+                  renovationStatuses,
+                  property.data['renovation_status'] as String?,
+                ),
+              ),
+              _row(
+                'جهت ساختمان',
+                labelOf(
+                  buildingOrientations,
+                  property.data['building_orientation'] as String?,
+                ),
+              ),
+              _row(
+                'نوع سند',
+                labelOf(deedTypes, property.data['deed_type'] as String?),
+              ),
+              _row('امکانات تکمیلی', _extraFeatures(property.data)),
             ],
           ),
         ),
@@ -175,6 +310,26 @@ final class _Overview extends ConsumerWidget {
               _row('شهر', property.city),
               _row('محله', '${property.data['district'] ?? '—'}'),
               _row('نشانی', property.address),
+              _row('پلاک', '${property.data['plaque'] ?? '—'}'),
+              _row(
+                'وضعیت تخلیه',
+                labelOf(
+                  deliveryStatuses,
+                  property.data['delivery_status'] as String?,
+                ),
+              ),
+              if (property.transactionType == 'sale' &&
+                  property.data['delivery_status'] == 'ready' &&
+                  property.data['available_from'] != null)
+                _row(
+                  'تاریخ آماده تحویل',
+                  PersianDate.formatIso('${property.data['available_from']}'),
+                )
+              else if (property.data['evacuation_date'] != null)
+                _row(
+                  'تاریخ تخلیه',
+                  PersianDate.formatIso('${property.data['evacuation_date']}'),
+                ),
             ],
           ),
         ),
@@ -189,9 +344,35 @@ final class _Overview extends ConsumerWidget {
                     leading: const CircleAvatar(
                       child: Icon(Icons.badge_outlined),
                     ),
-                    title: Text('${owner['display_name'] ?? ''}'),
+                    title: Text(
+                      '${owner['full_name'] ?? owner['display_name'] ?? ''}',
+                    ),
                     subtitle: Text(
-                      '${owner['mobile'] ?? owner['email'] ?? ''}',
+                      <String>[
+                        if ('${owner['mobile'] ?? ''}'.isNotEmpty)
+                          '${owner['mobile']}',
+                        if ('${owner['phone'] ?? ''}'.isNotEmpty)
+                          '${owner['phone']}',
+                      ].join(' • '),
+                    ),
+                    trailing: Wrap(
+                      spacing: 2,
+                      children: <Widget>[
+                        if ('${owner['mobile'] ?? ''}'.isNotEmpty)
+                          IconButton(
+                            tooltip: 'تماس با همراه مالک',
+                            onPressed: () =>
+                                launchPhoneCall(context, '${owner['mobile']}'),
+                            icon: const Icon(Icons.phone_rounded),
+                          ),
+                        if ('${owner['phone'] ?? ''}'.isNotEmpty)
+                          IconButton(
+                            tooltip: 'تماس با تلفن ثابت مالک',
+                            onPressed: () =>
+                                launchPhoneCall(context, '${owner['phone']}'),
+                            icon: const Icon(Icons.call_outlined),
+                          ),
+                      ],
                     ),
                   ),
                 )
@@ -215,10 +396,18 @@ final class _Overview extends ConsumerWidget {
             property.id,
             status: result.status,
             expectedUpdatedAt: property.updatedAt,
+            expectedVersion: property.lockVersion,
             reason: result.reason.isEmpty ? null : result.reason,
           );
       ref.invalidate(propertyProvider(property.id));
       ref.invalidate(propertiesProvider);
+      ref.read(matchDataRevisionProvider.notifier).refresh();
+      await ref.read(syncControllerProvider.notifier).refreshQueue();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('اطلاعات با موفقیت به‌روزرسانی شد')),
+        );
+      }
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -244,8 +433,23 @@ final class _Overview extends ConsumerWidget {
     ),
   );
 
-  static String _money(Object? value, Object? currency) =>
-      value == null ? '—' : '$value ${currency ?? ''}';
+  static String _labels(List<ChoiceItem> choices, Object? value) {
+    if (value is! List || value.isEmpty) return '—';
+    return value.map((item) => labelOf(choices, '$item')).join('، ');
+  }
+
+  static String _extraFeatures(Map<String, dynamic> data) {
+    final labels = <String>[
+      if (data['has_loan'] == true) 'وام',
+      if (data['is_exchangeable'] == true) 'قابل معاوضه',
+      if (data['has_pool'] == true) 'استخر',
+      if (data['has_jacuzzi'] == true) 'جکوزی',
+      if (data['has_sauna'] == true) 'سونا',
+    ];
+    return labels.isEmpty ? '—' : labels.join('، ');
+  }
+
+  static String _money(Object? value, Object? currency) => formatToman(value);
   static String _unit(Object? value, String unit) =>
       value == null ? '—' : '$value $unit';
 }
@@ -394,7 +598,11 @@ final class _PropertyNotesState extends ConsumerState<_PropertyNotes> {
                         return Card(
                           child: ListTile(
                             title: Text('${note['body']}'),
-                            subtitle: Text('${note['created_at'] ?? ''}'),
+                            subtitle: Text(
+                              PersianDate.formatIso(
+                                '${note['created_at'] ?? ''}',
+                              ),
+                            ),
                             trailing: note['author_user_id'] == userId
                                 ? PopupMenuButton<String>(
                                     onSelected: (action) => action == 'edit'
@@ -559,54 +767,11 @@ final class _PropertyImagesState extends ConsumerState<_PropertyImages> {
                     message: 'تصویری برای این ملک ثبت نشده است.',
                     icon: Icons.photo_library_outlined,
                   )
-                : GridView.builder(
-                    padding: const EdgeInsets.all(12),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                        ),
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return Card(
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: <Widget>[
-                            Image.network(
-                              _contentUrl('${item['content_url']}'),
-                              headers: token == null
-                                  ? null
-                                  : <String, String>{
-                                      'Authorization': 'Bearer $token',
-                                    },
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Center(
-                                child: Icon(Icons.broken_image_outlined),
-                              ),
-                            ),
-                            Positioned(
-                              top: 4,
-                              left: 4,
-                              child: IconButton.filledTonal(
-                                tooltip: 'حذف تصویر',
-                                onPressed: () =>
-                                    _delete((item['id'] as num).toInt()),
-                                icon: const Icon(Icons.delete_outline),
-                              ),
-                            ),
-                            if (item['is_cover'] == true)
-                              const Positioned(
-                                right: 6,
-                                bottom: 6,
-                                child: Chip(label: Text('کاور')),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
+                : _PropertyImageGallery(
+                    items: items,
+                    token: token,
+                    onShowFullImage: _showFullImage,
+                    onDelete: _delete,
                   ),
           ),
         ),
@@ -674,6 +839,198 @@ final class _PropertyImagesState extends ConsumerState<_PropertyImages> {
     }
   }
 
+  Future<void> _showFullImage(String imageUrl, Map<String, String>? headers) =>
+      showDialog<void>(
+        context: context,
+        barrierColor: Colors.black,
+        builder: (dialogContext) => Dialog.fullscreen(
+          backgroundColor: Colors.black,
+          child: Scaffold(
+            backgroundColor: Colors.black,
+            appBar: AppBar(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              title: const Text('تصویر ملک'),
+              leading: IconButton(
+                tooltip: 'بستن',
+                onPressed: () => Navigator.pop(dialogContext),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ),
+            body: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 5,
+              child: Center(
+                child: Image.network(
+                  imageUrl,
+                  headers: headers,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'نمایش تصویر امکان‌پذیر نیست.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+final class _PropertyImageGallery extends StatefulWidget {
+  const _PropertyImageGallery({
+    required this.items,
+    required this.token,
+    required this.onShowFullImage,
+    required this.onDelete,
+  });
+
+  final List<Map<String, dynamic>> items;
+  final String? token;
+  final Future<void> Function(String, Map<String, String>?) onShowFullImage;
+  final Future<void> Function(int) onDelete;
+
+  @override
+  State<_PropertyImageGallery> createState() => _PropertyImageGalleryState();
+}
+
+final class _PropertyImageGalleryState extends State<_PropertyImageGallery> {
+  late final PageController _pageController;
+  int _activeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PropertyImageGallery oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.items.isEmpty) return;
+    if (_activeIndex >= widget.items.length) {
+      _activeIndex = widget.items.length - 1;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(_activeIndex);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final headers = widget.token == null
+        ? null
+        : <String, String>{'Authorization': 'Bearer ${widget.token}'};
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          child: Row(
+            children: widget.items
+                .asMap()
+                .entries
+                .map(
+                  (entry) => Expanded(
+                    child: AnimatedContainer(
+                      key: ValueKey('property-image-indicator-${entry.key}'),
+                      duration: const Duration(milliseconds: 180),
+                      height: 4,
+                      margin: EdgeInsets.only(
+                        left: entry.key == 0 ? 0 : 3,
+                        right: entry.key == widget.items.length - 1 ? 0 : 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: entry.key == _activeIndex
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+          ),
+        ),
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: widget.items.length,
+            onPageChanged: (index) => setState(() => _activeIndex = index),
+            itemBuilder: (context, index) {
+              final item = widget.items[index];
+              final imageUrl = _contentUrl('${item['content_url']}');
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      Semantics(
+                        button: true,
+                        label: 'نمایش تصویر کامل',
+                        child: InkWell(
+                          onTap: () =>
+                              widget.onShowFullImage(imageUrl, headers),
+                          child: Image.network(
+                            imageUrl,
+                            headers: headers,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Center(
+                              child: Icon(Icons.broken_image_outlined),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: IconButton.filledTonal(
+                          tooltip: 'حذف تصویر',
+                          onPressed: () =>
+                              widget.onDelete((item['id'] as num).toInt()),
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ),
+                      if (item['is_cover'] == true)
+                        const Positioned(
+                          right: 8,
+                          bottom: 8,
+                          child: Chip(label: Text('کاور')),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   static String _contentUrl(String value) {
     final uri = Uri.tryParse(value);
     final base = Uri.parse(AppConfig.apiBaseUrl);
@@ -724,7 +1081,7 @@ final class _PropertyHistory extends ConsumerWidget {
                             item['to_status'] != null)
                           '${labelOf(propertyStatuses, item['from_status'] as String?)} ← ${labelOf(propertyStatuses, item['to_status'] as String?)}',
                         if (item['reason'] != null) '${item['reason']}',
-                        '${item['occurred_at'] ?? ''}',
+                        PersianDate.formatIso('${item['occurred_at'] ?? ''}'),
                       ].join('\n'),
                     ),
                   );

@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Domain\User\Enums\PermissionName;
 use App\Domain\User\Enums\RoleName;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -50,7 +51,17 @@ final class RolesAndPermissionsSeeder extends Seeder
                 ));
             }
 
-            DB::table('model_has_permissions')->delete();
+            $agentDefaults = array_map(
+                static fn (PermissionName $permission): string => $permission->value,
+                RoleName::agentDefaultPermissions(),
+            );
+            User::role(RoleName::Agent->value)
+                ->doesntHave('permissions')
+                ->each(static fn (User $agent) => $agent->givePermissionTo($agentDefaults));
+
+            DB::table('model_has_permissions')
+                ->whereNotIn('permission_id', Permission::query()->pluck('id'))
+                ->delete();
         });
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

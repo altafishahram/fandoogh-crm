@@ -39,7 +39,7 @@ final class RolesAndPermissionsSeederTest extends IdentityTestCase
         self::assertSame(0, DB::table('model_has_permissions')->count());
     }
 
-    public function test_seeder_is_idempotent_and_removes_stale_or_direct_permissions(): void
+    public function test_seeder_is_idempotent_removes_stale_permissions_and_keeps_agent_defaults(): void
     {
         $user = User::factory()->create();
         $stalePermission = Permission::create(['name' => 'stale.permission', 'guard_name' => 'web']);
@@ -51,7 +51,16 @@ final class RolesAndPermissionsSeederTest extends IdentityTestCase
 
         self::assertFalse(Permission::query()->where('name', 'stale.permission')->exists());
         self::assertFalse(Role::query()->where('name', 'stale-role')->exists());
-        self::assertSame(0, DB::table('model_has_permissions')->count());
+        $expectedDefaults = collect(RoleName::agentDefaultPermissions())
+            ->map(static fn (PermissionName $permission): string => $permission->value)
+            ->sort()
+            ->values()
+            ->all();
+        $freshUser = $user->fresh();
+        self::assertInstanceOf(User::class, $freshUser);
+        self::assertSame($expectedDefaults, $freshUser->getDirectPermissions()
+            ->pluck('name')->sort()->values()->all());
+        self::assertSame(count($expectedDefaults), DB::table('model_has_permissions')->count());
         self::assertSame(count(PermissionName::cases()), Permission::query()->count());
     }
 }

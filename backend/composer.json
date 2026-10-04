@@ -52,7 +52,7 @@
             "@test"
         ],
         "analyse": "@php vendor/bin/phpstan analyse --memory-limit=512M",
-        "test": "@php vendor/bin/phpunit",
+        "test": "@php tests/run.php",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi",

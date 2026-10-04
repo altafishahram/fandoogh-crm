@@ -12,6 +12,7 @@ use App\Filament\Agency\Resources\Users\Pages\CreateUser;
 use App\Filament\Agency\Resources\Users\Pages\EditUser;
 use App\Filament\Agency\Resources\Users\Pages\ListUsers;
 use App\Filament\Agency\Resources\Users\Pages\ViewUser;
+use App\Filament\Shared\Support\PersianDate;
 use App\Filament\Shared\Support\PersianLabels;
 use App\Filament\Shared\Support\ResourceForms;
 use App\Models\User;
@@ -54,7 +55,7 @@ final class UserResource extends Resource
         return $schema->components([
             TextEntry::make('name')->label(PersianLabels::field('name')), TextEntry::make('email')->label(PersianLabels::field('email')), TextEntry::make('phone')->label(PersianLabels::field('phone'))->placeholder('-'),
             IconEntry::make('is_active')->label(PersianLabels::field('is_active'))->boolean(), IconEntry::make('must_change_password')->label(PersianLabels::field('must_change_password'))->boolean(),
-            TextEntry::make('last_login_at')->label(PersianLabels::field('last_login_at'))->dateTime()->placeholder('-'),
+            TextEntry::make('last_login_at')->label(PersianLabels::field('last_login_at'))->formatStateUsing(PersianDate::format(...))->placeholder('—'),
             TextEntry::make('assigned_properties_count')->label(PersianLabels::field('assigned_properties_count'))->state(fn (User $record): int => $record->assignedProperties()->count()),
             TextEntry::make('assigned_customers_count')->label(PersianLabels::field('assigned_customers_count'))->state(fn (User $record): int => $record->assignedCustomers()->count()),
         ])->columns(3);
@@ -67,7 +68,7 @@ final class UserResource extends Resource
             TextColumn::make('phone')->label(PersianLabels::field('phone'))->searchable(), IconColumn::make('is_active')->label(PersianLabels::field('is_active'))->boolean(),
             TextColumn::make('assigned_properties_count')->counts('assignedProperties')->label(PersianLabels::field('assigned_properties_count'))->sortable(),
             TextColumn::make('assigned_customers_count')->counts('assignedCustomers')->label(PersianLabels::field('assigned_customers_count'))->sortable(),
-            TextColumn::make('last_login_at')->label(PersianLabels::field('last_login_at'))->dateTime()->sortable(),
+            TextColumn::make('last_login_at')->label(PersianLabels::field('last_login_at'))->formatStateUsing(PersianDate::format(...))->sortable(),
         ])->filters([TernaryFilter::make('is_active')->label('وضعیت فعالیت')])
             ->recordActions([ViewAction::make(), EditAction::make(), ...self::accountActions()]);
     }

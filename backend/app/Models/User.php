@@ -20,6 +20,7 @@ use Laravel\Sanctum\HasApiTokens;
 use LogicException;
 use Spatie\Permission\Traits\HasRoles;
 
+/** @property Agency|null $agency */
 class User extends Authenticatable implements FilamentUser
 {
     use HasApiTokens;

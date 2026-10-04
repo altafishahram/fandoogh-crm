@@ -13,12 +13,36 @@ docker/        PHP-FPM, Nginx, and MySQL development configuration
 
 The normative product and engineering documents are:
 
+- `CHANGELOG_FA.md` — ثبت خلاصهٔ تغییرات و بررسی‌های جاری
+- `REDESIGN_ARCHITECTURE_FA.md` — authoritative for the approved MelkBan redesign
+- `PHASE_4_FLUTTER_REDESIGN_REPORT_FA.md` — implementation and verification report for redesign Phase 4
+- `PHASE_5_INTERNAL_UAT_FA.md` — current internal build, deployment, rollback, and device-acceptance report
+- `PROPERTY_SHARED_FIELDS_REPORT_FA.md` — approved shared property fields, controls, contact actions, and verification
+- `VILLA_INDUSTRIAL_FIELDS_REPORT_FA.md` — villa building type, industrial fields, and verification
+- `PHASE_5_EMULATOR_ACCEPTANCE_REPORT_FA.md` — signed internal APK installation and emulator acceptance
 - `PROJECT_SPEC_MVP.md`
 - `PROJECT_SPEC_ENTERPRISE.md`
 - `CODING_STANDARDS.md`
 - `DATABASE_DESIGN.md`
 
-## Phase gate
+Where redesign requirements conflict with the older MVP or database documents, `REDESIGN_ARCHITECTURE_FA.md` takes precedence. Redesign implementation remains phase-gated and requires explicit approval for each phase.
+
+## Redesign phase gate
+
+The current MelkBan redesign follows its own approval gate:
+
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Current-state audit and regression baseline | Complete |
+| 1 | Target architecture, domain rules, permissions, API compatibility, and migration plan | Complete |
+| 2 | Backend and data redesign | Complete |
+| 3 | Filament web-panel redesign | Complete |
+| 4 | Flutter redesign, HTTPS endpoint, and offline operation | Complete |
+| 5 | Integration, internal build, deployment, and device acceptance | In progress; three-device initial run complete, build 4 hotfix deployed and awaiting physical-device recheck |
+
+No redesign phase starts without explicit user approval.
+
+## Original delivery phase gate
 
 Implementation is approval-gated. Phases 0 through 3 are complete. Phase 4 implementation is complete and its final external acceptance gates are recorded below. Phase 5 hardening and release work is in progress.
 

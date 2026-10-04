@@ -7,6 +7,7 @@ namespace App\Filament\Agency\Pages;
 use App\Application\Agency\Services\UpdateAgencyService;
 use App\Application\Agency\Services\UpdateAgencySettingsService;
 use App\Domain\User\Enums\PermissionName;
+use App\Filament\Shared\Support\LocationFields;
 use App\Filament\Shared\Support\PersianLabels;
 use App\Models\Agency;
 use App\Models\User;
@@ -40,6 +41,7 @@ final class AgencySettings extends Page
             Action::make('update')->label('ویرایش تنظیمات')->schema([
                 TextInput::make('email')->label(PersianLabels::field('email'))->email()->required(), TextInput::make('phone')->label(PersianLabels::field('phone'))->tel()->required(),
                 TextInput::make('address_line_1')->label(PersianLabels::field('address_line_1'))->required(), TextInput::make('address_line_2')->label(PersianLabels::field('address_line_2')),
+                ...LocationFields::make(),
                 TextInput::make('city')->label(PersianLabels::field('city'))->required(), TextInput::make('province')->label(PersianLabels::field('province'))->required(), TextInput::make('postal_code')->label(PersianLabels::field('postal_code')),
                 TextInput::make('timezone')->label(PersianLabels::field('timezone'))->required(), TextInput::make('locale')->label(PersianLabels::field('locale'))->required(),
                 TextInput::make('property_code_prefix')->label(PersianLabels::field('property_code_prefix'))->required()->minLength(2)->maxLength(10)
@@ -54,6 +56,7 @@ final class AgencySettings extends Page
                 return [
                     'email' => $agency->email, 'phone' => $agency->phone,
                     'address_line_1' => $agency->address_line_1, 'address_line_2' => $agency->address_line_2,
+                    'province_id' => $agency->province_id, 'county_id' => $agency->county_id, 'city_id' => $agency->city_id,
                     'city' => $agency->city, 'province' => $agency->province, 'postal_code' => $agency->postal_code,
                     'timezone' => $agency->timezone, 'locale' => $agency->locale,
                     'property_code_prefix' => $settings->property_code_prefix,

@@ -17,7 +17,7 @@ final class UpdatePropertyImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sort_order' => ['required', 'integer', 'between:0,19'],
+            'sort_order' => ['required', 'integer', 'between:0,4'],
             'is_cover' => ['required', 'boolean'],
             'expected_updated_at' => ['required', 'date'],
         ];
