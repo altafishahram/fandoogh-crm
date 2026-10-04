@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Control\Widgets;
 
 use App\Application\Dashboard\Services\DashboardService;
-use App\Models\User;
+use App\Filament\Control\Support\PlatformPanelAccess;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -14,8 +14,7 @@ final class PlatformStats extends StatsOverviewWidget
     /** @return list<Stat> */
     protected function getStats(): array
     {
-        $user = auth()->user();
-        abort_unless($user instanceof User, 401);
+        $user = PlatformPanelAccess::actor();
         $data = app(DashboardService::class)->for($user);
         $agencies = is_array($data['agencies'] ?? null) ? $data['agencies'] : [];
         $users = is_array($data['users'] ?? null) ? $data['users'] : [];

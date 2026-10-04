@@ -1,8 +1,8 @@
 {
   "@@locale": "fa",
-  "appName": "ملک بان",
+  "appName": "دفتر املاکی",
   "foundationTitle": "زیرساخت اولیه آماده است",
   "foundationDescription": "احراز هویت و فرایندهای کسب‌وکار فقط پس از تأیید فاز بعدی اضافه می‌شوند.",
   "foundationStatus": "فاز صفر",
-  "foundationIconLabel": "نشان سامانه ملک بان"
+  "foundationIconLabel": "نشان سامانه دفتر املاکی"
 }

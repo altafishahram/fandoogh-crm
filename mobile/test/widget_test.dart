@@ -295,6 +295,7 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: PropertyFormPage())),
     );
+    await tester.pumpAndSettle();
     expect(find.text('ثبت ملک جدید'), findsOneWidget);
     expect(find.text('اطلاعات اصلی'), findsOneWidget);
     expect(find.text('عنوان ملک'), findsOneWidget);
@@ -415,6 +416,7 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: CustomerFormPage())),
     );
+    await tester.pumpAndSettle();
     expect(find.text('ثبت مشتری جدید'), findsOneWidget);
     expect(find.byType(Stepper), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);

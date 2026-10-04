@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Dashboard\Services;
 
+use App\Application\Matching\Services\RelatedMatchQuery;
 use App\Domain\Tenancy\AgencyScope;
 use App\Domain\User\Enums\RoleName;
 use App\Models\Agency;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\Cache;
 
 final class DashboardService
 {
+    public function __construct(private readonly RelatedMatchQuery $matches) {}
+
     /** @return array<string, mixed> */
     public function for(User $user): array
     {
@@ -24,11 +27,27 @@ final class DashboardService
             'dashboard', $role->value, (string) $user->getKey(), (string) ($user->agency_id ?? 'platform'),
         ]);
 
-        return Cache::remember($cacheKey, 60, fn (): array => match ($role) {
+        $data = Cache::remember($cacheKey, 60, fn (): array => match ($role) {
             RoleName::SuperAdmin => $this->platform(),
             RoleName::AgencyManager => $this->agency((int) $user->agency_id),
             RoleName::Agent => $this->agency((int) $user->agency_id),
         });
+
+        // Read-state must not remain stale in the dashboard's one-minute cache.
+        if ($role !== RoleName::SuperAdmin) {
+            $ids = array_column($data['recent_properties'] ?? [], 'id');
+            $summaries = $this->matches->withSummaries(Property::query()->select('id')
+                ->where('agency_id', $user->agency_id)->whereIn('id', $ids), $user, 'property')
+                ->get()->keyBy('id');
+            $data['recent_properties'] = array_map(static function (array $property) use ($summaries): array {
+                $record = $summaries->get($property['id']);
+                $property['match_summary'] = $record === null ? null : RelatedMatchQuery::summaryOf($record);
+
+                return $property;
+            }, $data['recent_properties'] ?? []);
+        }
+
+        return $data;
     }
 
     /** @return array<string, mixed> */

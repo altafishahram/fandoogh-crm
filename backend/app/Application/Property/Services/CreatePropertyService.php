@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Property\Services;
 
+use App\Application\Geography\Services\LocationValidator;
 use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Property\Contracts\PropertyRepositoryContract;
 use App\Application\Property\Data\CreatePropertyData;
@@ -38,7 +39,7 @@ final readonly class CreatePropertyService
         if ($data->embeddedOwner === null) {
             $this->validator->ownerships($data->owners);
         }
-        $attributes = $data->attributes();
+        $attributes = app(LocationValidator::class)->normalize($data->attributes());
         if ($data->transactionType->value === 'sale' && $data->priceInputMode === 'per_sqm') {
             if ($data->salePricePerSqm === null || $data->areaSqm === null) {
                 throw new DomainConflictException('مبلغ هر متر و مساحت برای محاسبه مبلغ کل الزامی است.');

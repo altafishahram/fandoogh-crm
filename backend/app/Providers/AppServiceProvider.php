@@ -22,6 +22,7 @@ use App\Models\MatchNotification;
 use App\Models\Owner;
 use App\Models\Property;
 use App\Models\PropertyNote;
+use App\Models\PublicUser;
 use App\Models\SavedFilter;
 use App\Models\User;
 use App\Policies\AgencyPolicy;
@@ -65,7 +66,8 @@ final class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('api', static function (Request $request): Limit {
             $user = $request->user();
-            $key = $user instanceof User ? 'user:'.$user->getKey() : 'ip:'.$request->ip();
+            $key = $user instanceof User ? 'user:'.$user->getKey()
+                : ($user instanceof PublicUser ? 'public:'.$user->getKey() : 'ip:'.$request->ip());
 
             return Limit::perMinute(60)->by((string) $key);
         });

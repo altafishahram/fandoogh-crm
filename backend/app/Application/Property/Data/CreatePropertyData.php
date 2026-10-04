@@ -80,12 +80,16 @@ final readonly class CreatePropertyData
         public ?string $buildingArea = null,
         public bool $canAggregate = false,
         public ?string $landFrontage = null,
+        public ?int $provinceId = null,
+        public ?int $countyId = null,
+        public ?int $cityId = null,
     ) {}
 
     /** @return array<string, mixed> */
     public function attributes(): array
     {
         return [
+            'province_id' => $this->provinceId, 'county_id' => $this->countyId, 'city_id' => $this->cityId,
             'title' => $this->title, 'description' => $this->description,
             'property_type' => $this->propertyType, 'transaction_type' => $this->transactionType,
             'sale_price' => $this->salePrice, 'deposit_amount' => $this->depositAmount,

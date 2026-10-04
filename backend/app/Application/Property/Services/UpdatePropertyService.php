@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Property\Services;
 
+use App\Application\Geography\Services\LocationValidator;
 use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Property\Contracts\PropertyRepositoryContract;
 use App\Application\Property\Data\UpdatePropertyData;
@@ -45,7 +46,7 @@ final readonly class UpdatePropertyService
                 throw new DomainConflictException('این ملک در وضعیت فعلی فقط‌خواندنی است.');
             }
 
-            $attributes = $data->attributes;
+            $attributes = app(LocationValidator::class)->normalize($data->attributes);
             $transactionChanged = array_key_exists('transaction_type', $attributes)
                 && $attributes['transaction_type'] !== $locked->transaction_type;
             $assignmentChanged = array_key_exists('assigned_agent_id', $attributes)

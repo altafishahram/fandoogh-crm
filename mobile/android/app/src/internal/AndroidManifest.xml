@@ -2,6 +2,6 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Internal builds use the same HTTPS-only endpoint as production. -->
     <application
-        android:label="ملک بان (آزمایشی)"
+        android:label="دفتر املاکی (آزمایشی)"
         tools:replace="android:label" />
 </manifest>

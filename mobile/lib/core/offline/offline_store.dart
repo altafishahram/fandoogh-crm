@@ -13,15 +13,20 @@ final class OfflineStore {
   OfflineStore(this._storage);
 
   final FlutterSecureStorage _storage;
+  static final _cacheMutations = <String, Future<void>>{};
   String? _scope;
 
   bool get isConfigured => _scope != null;
+  String? get scopeKey => _scope;
+
+  /// Capture the tenant/user before asynchronous requests or detail exit.
+  OfflineStore scoped() => OfflineStore(_storage).._scope = _scope;
 
   void configure(Map<String, dynamic> user) {
     final agency = user['agency'];
     final agencyId = agency is Map ? agency['id'] : null;
     final userId = user['id'];
-    if (agencyId != null && userId != null) _scope = '${agencyId}_$userId';
+    _scope = agencyId != null && userId != null ? '${agencyId}_$userId' : null;
   }
 
   Future<List<Map<String, dynamic>>> records(String resource) async {
@@ -39,22 +44,77 @@ final class OfflineStore {
   Future<void> mergeRecords(
     String resource,
     Iterable<Map<String, dynamic>> incoming,
-  ) async {
+  ) => updateRecords(resource, (records) {
     final current = <String, Map<String, dynamic>>{
-      for (final item in await records(resource)) '${item['id']}': item,
+      for (final item in records) '${item['id']}': item,
     };
     for (final item in incoming) {
       current['${item['id']}'] = Map<String, dynamic>.from(item);
     }
-    final values = current.values.toList(growable: false)
-      ..sort(
-        (a, b) =>
-            '${b['updated_at'] ?? ''}'.compareTo('${a['updated_at'] ?? ''}'),
-      );
-    await _storage.write(
-      key: _key('cache_$resource'),
-      value: jsonEncode(values),
+    records
+      ..clear()
+      ..addAll(current.values);
+    records.sort(
+      (a, b) =>
+          '${b['updated_at'] ?? ''}'.compareTo('${a['updated_at'] ?? ''}'),
     );
+  });
+
+  Future<void> replaceRecords(
+    String resource,
+    Iterable<Map<String, dynamic>> records,
+  ) {
+    final incoming = records.toList(growable: false);
+    return updateRecords(
+      resource,
+      (values) => values
+        ..clear()
+        ..addAll(incoming),
+    );
+  }
+
+  /// Serialize cache mutations across scoped snapshots. A late read response
+  /// must not overwrite a higher notification version.
+  Future<void> updateRecords(
+    String resource,
+    void Function(List<Map<String, dynamic>>) update,
+  ) {
+    final store = scoped();
+    final key = store._key('cache_$resource');
+    final previous = _cacheMutations[key] ?? Future<void>.value();
+    final next = previous.catchError((Object _) {}).then((_) async {
+      final values = (await store.records(resource)).toList();
+      update(values);
+      await _storage.write(key: key, value: jsonEncode(values));
+    });
+    _cacheMutations[key] = next;
+    return next.whenComplete(() {
+      if (identical(_cacheMutations[key], next)) _cacheMutations.remove(key);
+    });
+  }
+
+  /// An offline eligibility change cannot be re-ranked locally. Retire its
+  /// affected snapshot instead of pretending stale or unknown matches are zero.
+  Future<void> invalidateMatchData() async {
+    final store = scoped();
+    await store.replaceRecords('related-matches', <Map<String, dynamic>>[]);
+    for (final resource in <String>['properties', 'customers']) {
+      final records = await store.records(resource);
+      for (final record in records) {
+        record['match_summary'] = null;
+      }
+      await store.replaceRecords(resource, records);
+    }
+    final dashboards = await store.records('dashboard');
+    for (final dashboard in dashboards) {
+      final properties = dashboard['recent_properties'];
+      if (properties is List) {
+        for (final property in properties.whereType<Map>()) {
+          property['match_summary'] = null;
+        }
+      }
+    }
+    await store.replaceRecords('dashboard', dashboards);
   }
 
   Future<void> completeOperation(
@@ -146,17 +206,21 @@ final class OfflineStore {
 
   Future<void> clearScope() async {
     if (_scope == null) return;
+    final originalScope = _scope;
+    final store = scoped();
     for (final suffix in <String>[
       'cache_properties',
       'cache_customers',
       'cache_match-notifications',
+      'cache_related-matches',
+      'cache_dashboard',
       'operations',
       'cursor_properties',
       'cursor_customers',
     ]) {
-      await _storage.delete(key: _key(suffix));
+      await _storage.delete(key: store._key(suffix));
     }
-    _scope = null;
+    if (_scope == originalScope) _scope = null;
   }
 
   Future<void> _writeOperations(List<Map<String, dynamic>> values) =>

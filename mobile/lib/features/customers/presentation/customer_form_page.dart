@@ -1,3 +1,4 @@
+import 'package:fandoogh_crm/features/geography/geography.dart';
 import 'package:fandoogh_crm/core/auth/auth_controller.dart';
 import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/localization/persian_date.dart';
@@ -5,6 +6,7 @@ import 'package:fandoogh_crm/core/localization/persian_number.dart';
 import 'package:fandoogh_crm/core/offline/sync_controller.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/features/customers/data/customer_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,6 +56,7 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
   bool _ownerResides = false;
   bool _loading = false;
   bool _saving = false;
+  RegionSelection _region = const RegionSelection();
   String? _error;
   CustomerRecord? _original;
   static const _displayNumericFields = <String>{
@@ -98,6 +101,7 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
   @override
   void initState() {
     super.initState();
+    if (!_editing) _region = agencyRegion(ref);
     _stepAnimation = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 260),
@@ -408,7 +412,16 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
 
   Widget _budgetStep() => Column(
     children: <Widget>[
-      _text('city', 'شهر موردنظر'),
+      RegionFields(
+        value: _region,
+        requiredCity: false,
+        legacyCity: _editing ? _c('city').text : null,
+        onChanged: (region) => setState(() {
+          _region = region;
+          _c('city').text = region.cityName ?? '';
+          _c('district').clear();
+        }),
+      ),
       _gap,
       _text('district', 'محلهٔ موردنظر'),
       _gap,
@@ -833,6 +846,7 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
           .read(customerRepositoryProvider)
           .find(widget.customerId!);
       _original = item;
+      _region = RegionSelection.fromJson(item.data, prefix: 'desired_');
       for (final entry in <String, Object?>{
         'full_name': item.data['full_name'],
         'mobile': item.data['mobile'],
@@ -939,7 +953,8 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
       'intent': _intent,
       'desired_property_type': _propertyType,
       'preferred_property_types': <String>[_propertyType],
-      'desired_city': _textOrNull('city'),
+      'desired_city': _region.cityName ?? _textOrNull('city'),
+      ..._region.toJson(prefix: 'desired_'),
       'desired_district': _textOrNull('district'),
       'min_area_sqm': _isIndustrial ? null : _empty('area_min'),
       'max_area_sqm': _isIndustrial ? null : _empty('area_max'),
@@ -1002,6 +1017,7 @@ final class _CustomerFormPageState extends ConsumerState<CustomerFormPage>
         await ref.read(customerRepositoryProvider).create(body);
       }
       ref.invalidate(customersProvider);
+      ref.read(matchDataRevisionProvider.notifier).refresh();
       await ref.read(syncControllerProvider.notifier).refreshQueue();
       if (mounted) {
         context.pop(true);

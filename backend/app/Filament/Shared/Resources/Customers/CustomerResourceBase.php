@@ -9,15 +9,19 @@ use App\Application\Customer\Services\CustomerNoteService;
 use App\Application\Customer\Services\DeleteCustomerService;
 use App\Application\Customer\Services\RestoreCustomerService;
 use App\Application\Customer\Services\UpdateCustomerService;
+use App\Application\Matching\Services\RelatedMatchQuery;
 use App\Domain\Customer\Enums\CustomerIntent;
 use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Property\Enums\PropertyType;
 use App\Domain\User\Enums\RoleName;
 use App\Filament\Shared\RelationManagers\CustomerHistoriesRelationManager;
 use App\Filament\Shared\RelationManagers\CustomerNotesRelationManager;
+use App\Filament\Shared\Support\LocationFields;
 use App\Filament\Shared\Support\PersianDate;
 use App\Filament\Shared\Support\PersianLabels;
+use App\Filament\Shared\Support\RelatedMatchPresentation;
 use App\Filament\Shared\Support\ResourceForms;
+use App\Livewire\RelatedMatchList;
 use App\Models\Customer;
 use App\Models\User;
 use BackedEnum;
@@ -30,6 +34,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
@@ -67,6 +72,10 @@ abstract class CustomerResourceBase extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
+            Livewire::make(RelatedMatchList::class, fn (Customer $record): array => [
+                'side' => 'customer', 'recordId' => (int) $record->getKey(),
+            ])->key(fn (Customer $record): string => 'customer-matches-'.$record->getKey())
+                ->columnSpanFull(),
             Section::make('اطلاعات مشتری')->schema([
                 TextEntry::make('full_name')->label('نام و نام خانوادگی'),
                 TextEntry::make('mobile')->label('شماره همراه'), TextEntry::make('phone')->label('تلفن ثابت')->placeholder('—'),
@@ -155,8 +164,15 @@ abstract class CustomerResourceBase extends Resource
                     $record->desired_district,
                 ]))),
                 TextColumn::make('created_at')->label('تاریخ ثبت')->formatStateUsing(PersianDate::format(...))->color('gray'),
+                TextColumn::make('match_count')->label('املاک منطبق')
+                    ->formatStateUsing(fn (mixed $state, Customer $record): string => RelatedMatchPresentation::summary((int) $state, (int) $record->getAttribute('unread_match_count')))
+                    ->tooltip(fn (Customer $record): string => RelatedMatchPresentation::accessibleSummary((int) $record->getAttribute('match_count'), (int) $record->getAttribute('unread_match_count')))
+                    ->badge()->color(fn (Customer $record): string => (int) $record->getAttribute('unread_match_count') > 0 ? 'warning' : 'gray')
+                    ->url(fn (Customer $record): string => static::getUrl('view', ['record' => $record]).'#related-matches'),
             ])->space(2),
-        ])->contentGrid(['md' => 2, 'xl' => 3])->filters([
+        ])->contentGrid(['md' => 2, 'xl' => 3])->poll('30s')->filters([
+            LocationFields::filter('desired_'),
+
             SelectFilter::make('status')->label('وضعیت')->multiple()->options(PersianLabels::options(CustomerStatus::cases())),
             SelectFilter::make('intent')->label('قصد مشتری')->options(PersianLabels::options(CustomerIntent::cases())),
             SelectFilter::make('desired_property_type')->label('نوع ملک')->multiple()->options(PersianLabels::options(PropertyType::cases())),
@@ -202,7 +218,11 @@ abstract class CustomerResourceBase extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
+        return app(RelatedMatchQuery::class)->withSummaries(
+            parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]),
+            static::actor(),
+            'customer',
+        );
     }
 
     public static function getRecordRouteBindingEloquentQuery(): Builder

@@ -27,6 +27,10 @@ final class StorePropertyRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'province_id' => ['sometimes', 'nullable', 'integer'],
+            'county_id' => ['sometimes', 'nullable', 'integer'],
+            'city_id' => ['sometimes', 'nullable', 'integer'],
+
             'agency_id' => ['prohibited'], 'code' => ['prohibited'], 'currency_code' => ['prohibited'],
             'status' => ['nullable', Rule::enum(PropertyStatus::class)], 'created_by_user_id' => ['prohibited'],
             'title' => ['required', 'string', 'max:200'],
@@ -190,6 +194,9 @@ final class StorePropertyRequest extends FormRequest
             (bool) ($data['has_gas'] ?? false), $data['telephone_line_count'] ?? null,
             $data['land_area'] ?? null, $data['building_area'] ?? null,
             (bool) ($data['can_aggregate'] ?? false), $data['land_frontage'] ?? null,
+            isset($data['province_id']) ? (int) $data['province_id'] : null,
+            isset($data['county_id']) ? (int) $data['county_id'] : null,
+            isset($data['city_id']) ? (int) $data['city_id'] : null,
         );
     }
 }

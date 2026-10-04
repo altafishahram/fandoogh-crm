@@ -44,7 +44,7 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
                         const BrandSignature(),
                         const SizedBox(height: 26),
                         Text(
-                          'به ملک‌بان خوش آمدید',
+                          'به دفتر املاکی خوش آمدید',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),

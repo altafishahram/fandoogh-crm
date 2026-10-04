@@ -19,7 +19,7 @@ final readonly class EstablishTenantContext
         $user = $request->user();
 
         if (! $user instanceof User) {
-            abort(401);
+            abort($user === null ? 401 : 403);
         }
 
         $this->tenantContext->establish($user);

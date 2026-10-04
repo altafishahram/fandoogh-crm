@@ -34,6 +34,7 @@ final class PanelDataMapper
             self::string($data, 'identity_number_encrypted'), self::string($data, 'address_line_1'),
             self::string($data, 'address_line_2'), self::string($data, 'city'),
             self::string($data, 'province'), self::string($data, 'postal_code'), self::string($data, 'notes'),
+            self::integer($data, 'province_id'), self::integer($data, 'county_id'), self::integer($data, 'city_id'),
         );
     }
 
@@ -99,6 +100,7 @@ final class PanelDataMapper
             (bool) ($data['has_gas'] ?? false), self::string($data, 'telephone_line_count'),
             self::string($data, 'land_area'), self::string($data, 'building_area'),
             (bool) ($data['can_aggregate'] ?? false), self::string($data, 'land_frontage'),
+            self::integer($data, 'province_id'), self::integer($data, 'county_id'), self::integer($data, 'city_id'),
         );
     }
 
@@ -109,7 +111,7 @@ final class PanelDataMapper
             'title', 'description', 'property_type', 'transaction_type', 'assigned_agent_id', 'sale_price',
             'deposit_amount', 'monthly_rent', 'area_sqm', 'bedrooms', 'bathrooms', 'floor_number',
             'total_floors', 'year_built', 'parking_spaces', 'has_storage_room', 'has_elevator',
-            'has_balcony', 'city', 'district', 'street_address', 'postal_code', 'latitude',
+            'province_id', 'county_id', 'city_id', 'has_balcony', 'city', 'district', 'street_address', 'postal_code', 'latitude',
             'longitude', 'available_from', 'plaque', 'units_per_floor', 'master_bedrooms',
             'toilet_types', 'cabinet_type', 'heating_systems', 'cooling_systems', 'flooring_type',
             'renovation_status', 'delivery_status', 'evacuation_date', 'is_convertible', 'minimum_deposit',
@@ -233,6 +235,7 @@ final class PanelDataMapper
             $isRent && (bool) ($data['owner_resides'] ?? false),
             self::string($data, 'land_area_min'), self::string($data, 'land_area_max'),
             self::string($data, 'building_area_min'), self::string($data, 'building_area_max'),
+            self::integer($data, 'desired_province_id'), self::integer($data, 'desired_county_id'), self::integer($data, 'desired_city_id'),
         );
     }
 
@@ -242,7 +245,7 @@ final class PanelDataMapper
         $allowed = [
             'assigned_agent_id', 'first_name', 'last_name', 'mobile', 'phone', 'email',
             'preferred_contact_method', 'intent', 'status', 'preferred_property_types', 'budget_min',
-            'budget_max', 'desired_city', 'desired_district', 'min_area_sqm', 'max_area_sqm',
+            'budget_max', 'desired_province_id', 'desired_county_id', 'desired_city_id', 'desired_city', 'desired_district', 'min_area_sqm', 'max_area_sqm',
             'min_bedrooms', 'converted_property_id', 'full_name', 'desired_property_type',
             'rental_deposit_min', 'rental_deposit_max', 'rental_rent_min', 'rental_rent_max',
             'accepts_rent_conversion', 'description',

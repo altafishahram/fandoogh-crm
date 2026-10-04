@@ -15,7 +15,7 @@ final class RootEndpointTest extends TestCase
             ->assertOk()
             ->assertHeader(AssignRequestId::HEADER)
             ->assertExactJson([
-                'name' => 'ملک بان',
+                'name' => 'دفتر املاکی',
                 'phase' => 'آماده بهره‌برداری آزمایشی',
                 'status' => 'فعال',
             ]);

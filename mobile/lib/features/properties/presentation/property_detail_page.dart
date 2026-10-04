@@ -10,6 +10,9 @@ import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/core/widgets/section_card.dart';
 import 'package:fandoogh_crm/core/widgets/text_input_dialog.dart';
 import 'package:fandoogh_crm/features/properties/data/property_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_summary.dart';
+import 'package:fandoogh_crm/features/match_notifications/presentation/related_match_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +31,13 @@ final class PropertyDetailPage extends ConsumerWidget {
           title: Text(property.value?.title ?? 'جزئیات ملک'),
           actions: <Widget>[
             IconButton(
+              tooltip: 'انتشار آگهی',
+              onPressed: property.hasValue
+                  ? () => context.push('/properties/$propertyId/publication')
+                  : null,
+              icon: const Icon(Icons.publish_outlined),
+            ),
+            IconButton(
               tooltip: 'ویرایش ملک',
               onPressed:
                   property.hasValue &&
@@ -38,6 +48,7 @@ final class PropertyDetailPage extends ConsumerWidget {
                       );
                       if (changed == true) {
                         ref.invalidate(propertyProvider(propertyId));
+                        ref.read(matchDataRevisionProvider.notifier).refresh();
                       }
                     }
                   : null,
@@ -109,6 +120,10 @@ final class _Overview extends ConsumerWidget {
                 runSpacing: 8,
                 children: <Widget>[
                   Chip(label: Text(labelOf(propertyStatuses, property.status))),
+                  RelatedMatchBadge(
+                    scope: RelatedMatchScope.property(property.id),
+                    summary: property.matchSummary,
+                  ),
                   Chip(
                     label: Text(labelOf(propertyTypes, property.propertyType)),
                   ),
@@ -386,6 +401,7 @@ final class _Overview extends ConsumerWidget {
           );
       ref.invalidate(propertyProvider(property.id));
       ref.invalidate(propertiesProvider);
+      ref.read(matchDataRevisionProvider.notifier).refresh();
       await ref.read(syncControllerProvider.notifier).refreshQueue();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

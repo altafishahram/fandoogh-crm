@@ -1,6 +1,8 @@
 import 'package:fandoogh_crm/core/config/app_config.dart';
 import 'package:fandoogh_crm/core/localization/persian_date.dart';
 import 'package:fandoogh_crm/features/properties/data/property_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_summary.dart';
+import 'package:fandoogh_crm/features/match_notifications/presentation/related_match_badge.dart';
 import 'package:flutter/material.dart';
 
 enum PropertyCardDisplay { classic, visual }
@@ -25,6 +27,8 @@ final class PropertyCard extends StatelessWidget {
     this.pendingSync = false,
     this.display = PropertyCardDisplay.classic,
     this.onTap,
+    this.propertyId,
+    this.matchSummary,
     super.key,
   });
 
@@ -36,6 +40,8 @@ final class PropertyCard extends StatelessWidget {
   }) {
     return PropertyCard(
       title: property.title,
+      propertyId: property.id,
+      matchSummary: property.matchSummary,
       transactionType: property.transactionType,
       area:
           property.data['area_sqm'] ??
@@ -75,6 +81,8 @@ final class PropertyCard extends StatelessWidget {
         : const <Map<String, dynamic>>[];
     return PropertyCard(
       title: _text(data['title'] ?? data['name'], 'بدون عنوان'),
+      propertyId: int.tryParse('${data['id']}'),
+      matchSummary: MatchSummary.fromJson(data['match_summary']),
       transactionType: _text(
         data['transaction_type'] ?? data['transactionType'],
         'sale',
@@ -103,6 +111,8 @@ final class PropertyCard extends StatelessWidget {
   }
 
   final String title;
+  final int? propertyId;
+  final MatchSummary? matchSummary;
   final String transactionType;
   final Object? area;
   final Object? salePrice;
@@ -221,6 +231,13 @@ final class PropertyCard extends StatelessWidget {
                               ),
                             ),
                           ),
+                        if (propertyId != null) ...<Widget>[
+                          const SizedBox(height: 8),
+                          RelatedMatchBadge(
+                            scope: RelatedMatchScope.property(propertyId!),
+                            summary: matchSummary,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -343,6 +360,16 @@ final class PropertyCard extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
+                  if (propertyId != null) ...<Widget>[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: RelatedMatchBadge(
+                        scope: RelatedMatchScope.property(propertyId!),
+                        summary: matchSummary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -682,9 +709,7 @@ final class _PropertyCardImage extends StatelessWidget {
             left: 8,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: isRent
-                    ? AppCardColors.teal
-                    : AppCardColors.coral,
+                color: isRent ? AppCardColors.teal : AppCardColors.coral,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Padding(

@@ -20,11 +20,16 @@ abstract interface class TokenStore {
 }
 
 final class SecureTokenStore implements TokenStore {
-  const SecureTokenStore(this._storage);
+  const SecureTokenStore(this._storage, {this.namespace = 'mobile'});
 
-  static const _key = 'mobile_access_token';
-  static const _userKey = 'mobile_cached_user';
+  final String namespace;
+  String get _key => '${namespace}_access_token';
+  String get _userKey => '${namespace}_cached_user';
   final FlutterSecureStorage _storage;
+
+  Future<String?> readReference(String key) => _storage.read(key: key);
+  Future<void> writeReference(String key, String value) =>
+      _storage.write(key: key, value: value);
 
   @override
   Future<String?> read() => _storage.read(key: _key);

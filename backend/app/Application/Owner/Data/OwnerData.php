@@ -23,12 +23,16 @@ final readonly class OwnerData
         public ?string $province,
         public ?string $postalCode,
         public ?string $notes,
+        public ?int $provinceId = null,
+        public ?int $countyId = null,
+        public ?int $cityId = null,
     ) {}
 
     /** @return array<string, mixed> */
     public function attributes(): array
     {
         return [
+            'province_id' => $this->provinceId, 'county_id' => $this->countyId, 'city_id' => $this->cityId,
             'owner_type' => $this->ownerType,
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,

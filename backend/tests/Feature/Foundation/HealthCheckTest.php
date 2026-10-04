@@ -16,7 +16,7 @@ final class HealthCheckTest extends TestCase
         $response
             ->assertOk()
             ->assertJson([
-                'name' => 'ملک بان',
+                'name' => 'دفتر املاکی',
                 'status' => 'ok',
             ])
             ->assertHeader(AssignRequestId::HEADER);

@@ -6,6 +6,7 @@ namespace App\Filament\Control\Resources\Agencies;
 
 use App\Application\Agency\Services\ActivateAgencyService;
 use App\Application\Agency\Services\SuspendAgencyService;
+use App\Application\Agency\Services\VerifyAgencyService;
 use App\Domain\Tenancy\AgencyScope;
 use App\Filament\Control\Resources\Agencies\Pages\CreateAgency;
 use App\Filament\Control\Resources\Agencies\Pages\EditAgency;
@@ -80,11 +81,15 @@ final class AgencyResource extends Resource
     {
         return $table->columns([
             TextColumn::make('name')->label(PersianLabels::field('name'))->searchable()->sortable(), TextColumn::make('slug')->label(PersianLabels::field('slug'))->searchable(),
+            IconColumn::make('is_verified')->label('تأیید بازار')->boolean(),
             IconColumn::make('is_active')->label(PersianLabels::field('is_active'))->boolean(), TextColumn::make('city')->label(PersianLabels::field('city'))->searchable(),
             TextColumn::make('timezone')->label(PersianLabels::field('timezone')), TextColumn::make('users_count')->counts('users')->label(PersianLabels::field('users_count')),
             TextColumn::make('activated_at')->label(PersianLabels::field('activated_at'))->formatStateUsing(PersianDate::format(...))->placeholder('—')->sortable(),
         ])->filters([TernaryFilter::make('is_active')->label('وضعیت فعالیت')])->recordActions([
             ViewAction::make(), EditAction::make(),
+            Action::make('verify')->label(fn (Agency $record): string => $record->is_verified ? 'لغو تأیید بازار' : 'تأیید برای بازار')->color('success')
+                ->visible(fn (): bool => self::actor()->can('agencies.verify'))
+                ->action(fn (Agency $record) => app(VerifyAgencyService::class)->execute(self::actor(), $record, ! $record->is_verified)),
             Action::make('activate')->label('فعال‌کردن')->color('success')->requiresConfirmation()
                 ->visible(fn (Agency $record): bool => ! $record->is_active && Gate::allows('activate', $record))
                 ->action(function (Agency $record): void {

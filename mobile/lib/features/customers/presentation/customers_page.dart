@@ -1,9 +1,12 @@
+import 'package:fandoogh_crm/features/geography/geography.dart';
 import 'package:fandoogh_crm/core/localization/persian_number.dart';
 import 'package:fandoogh_crm/core/network/paged_result.dart';
 import 'package:fandoogh_crm/core/phone/phone_launcher.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/features/customers/data/customer_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_summary.dart';
+import 'package:fandoogh_crm/features/match_notifications/presentation/related_match_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +24,7 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
   String? _intent;
   String? _propertyType;
   String? _city;
+  RegionSelection _region = const RegionSelection();
   String? _district;
   String? _areaMin;
   String? _areaMax;
@@ -28,6 +32,13 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
   String? _budgetMax;
   Map<String, Object?> _requirementFilters = const <String, Object?>{};
   String _order = 'newest';
+
+  @override
+  void initState() {
+    super.initState();
+    _region = agencyRegion(ref);
+    if (_region.provinceId != null) Future<void>.microtask(_apply);
+  }
 
   @override
   void didChangeDependencies() {
@@ -74,15 +85,15 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
                         hintText: 'شماره یا نام مشتری',
                         leading: const Icon(Icons.search_rounded),
                         trailing: <Widget>[
-                if (_search.text.isNotEmpty)
-                  IconButton(
-                    tooltip: 'پاک‌کردن',
-                    onPressed: () {
-                      setState(_search.clear);
-                      _apply();
-                    },
-                    icon: const Icon(Icons.close_rounded),
-                  ),
+                          if (_search.text.isNotEmpty)
+                            IconButton(
+                              tooltip: 'پاک‌کردن',
+                              onPressed: () {
+                                setState(_search.clear);
+                                _apply();
+                              },
+                              icon: const Icon(Icons.close_rounded),
+                            ),
                         ],
                         onChanged: (_) => setState(() {}),
                         onSubmitted: (_) => _apply(),
@@ -376,6 +387,7 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
           district: _district,
           requirements: <String, Object?>{
             'city': _city,
+            ..._region.toJson(),
             'area_min': _areaMin,
             'area_max': _areaMax,
             ...requirements,
@@ -388,6 +400,7 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
     var status = _status;
     var intent = _intent;
     var propertyType = _propertyType;
+    var region = _region;
     var step = 0;
     final city = TextEditingController(text: _city);
     final district = TextEditingController(text: _district);
@@ -532,10 +545,13 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
                     }),
                   ),
                   const SizedBox(height: 10),
-                  TextField(
-                    controller: city,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'شهر موردنظر'),
+                  RegionFields(
+                    value: region,
+                    onChanged: (value) => setSheetState(() {
+                      region = value;
+                      city.text = value.cityName ?? '';
+                      district.clear();
+                    }),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -764,7 +780,9 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
         _status = status;
         _intent = intent;
         _propertyType = propertyType;
-        _city = _nullable(city.text);
+        _region = region;
+        _city = null;
+        _region = const RegionSelection();
         _district = _nullable(district.text);
         _areaMin = _nullable(areaMin.text);
         _areaMax = _nullable(areaMax.text);
@@ -828,6 +846,7 @@ final class _CustomersPageState extends ConsumerState<CustomersPage> {
       _status != null ||
       _intent != null ||
       _propertyType != null ||
+      _region.provinceId != null ||
       _city != null ||
       _areaMin != null ||
       _areaMax != null ||
@@ -1047,6 +1066,14 @@ final class _CustomerCard extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 9),
                 child: Divider(height: 1),
               ),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: RelatedMatchBadge(
+                  scope: RelatedMatchScope.customer(customer.id),
+                  summary: customer.matchSummary,
+                ),
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: <Widget>[
                   _callButton(context),

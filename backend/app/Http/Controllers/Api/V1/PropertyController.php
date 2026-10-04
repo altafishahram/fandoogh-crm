@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Application\Geography\Services\LocationQuery;
+use App\Application\Matching\Services\RelatedMatchQuery;
 use App\Application\Property\Services\ChangePropertyStatusService;
 use App\Application\Property\Services\CreatePropertyService;
 use App\Application\Property\Services\UpdatePropertyService;
@@ -22,12 +24,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class PropertyController extends Controller
 {
+    public function __construct(private readonly RelatedMatchQuery $matches) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Property::class);
         /** @var User $user */
         $user = $request->user();
         $validated = $request->validate([
+            'province_id' => ['nullable', 'integer'], 'county_id' => ['nullable', 'integer'], 'city_id' => ['nullable', 'integer'],
             'q' => ['nullable', 'string', 'max:200'],
             'status' => ['nullable', 'string'], 'property_type' => ['nullable', 'string'],
             'transaction_type' => ['nullable', 'string'], 'city' => ['nullable', 'string', 'max:100'],
@@ -67,6 +72,7 @@ final class PropertyController extends Controller
                 $query->where($field, $validated[$field]);
             }
         }
+        app(LocationQuery::class)->apply($query, $validated);
         if (isset($validated['city'])) {
             $query->where('city', 'like', '%'.addcslashes(trim($validated['city']), '%_\\').'%');
         }
@@ -127,7 +133,8 @@ final class PropertyController extends Controller
             ? $query->orderBy('created_at')->orderBy('id')
             : $query->orderByDesc('created_at')->orderByDesc('id');
 
-        return PropertyResource::collection($query->paginate($validated['per_page'] ?? 25));
+        return PropertyResource::collection($this->matches->withSummaries($query, $user, 'property')
+            ->paginate($validated['per_page'] ?? 25));
     }
 
     public function store(StorePropertyRequest $request, CreatePropertyService $service): JsonResponse
@@ -136,15 +143,19 @@ final class PropertyController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return (new PropertyResource($service->execute($user, $request->toData())))
+        return (new PropertyResource($this->matches->loadSummary($service->execute($user, $request->toData()), $user)))
             ->response()->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(Property $property): PropertyResource
+    public function show(Request $request, Property $property): PropertyResource
     {
         Gate::authorize('view', $property);
+        /** @var User $user */
+        $user = $request->user();
 
-        return new PropertyResource($property->load(['owners', 'assignedAgent', 'images']));
+        return new PropertyResource($this->matches->loadSummary(
+            $property->load(['owners', 'assignedAgent', 'images']), $user,
+        ));
     }
 
     public function update(
@@ -156,7 +167,7 @@ final class PropertyController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return new PropertyResource($service->execute($user, $property, $request->toData()));
+        return new PropertyResource($this->matches->loadSummary($service->execute($user, $property, $request->toData()), $user));
     }
 
     public function changeStatus(
@@ -168,6 +179,6 @@ final class PropertyController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return new PropertyResource($service->execute($user, $property, $request->toData()));
+        return new PropertyResource($this->matches->loadSummary($service->execute($user, $property, $request->toData()), $user));
     }
 }

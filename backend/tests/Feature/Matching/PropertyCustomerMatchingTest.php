@@ -9,6 +9,7 @@ use App\Application\Customer\Data\UpdateCustomerData;
 use App\Application\Customer\Services\CreateCustomerService;
 use App\Application\Customer\Services\CustomerInvariantValidator;
 use App\Application\Customer\Services\UpdateCustomerService;
+use App\Application\Matching\Services\MarkMatchNotificationReadService;
 use App\Application\Matching\Services\PropertyCustomerMatchingService;
 use App\Application\Property\Data\ChangePropertyStatusData;
 use App\Application\Property\Data\CreatePropertyData;
@@ -30,15 +31,80 @@ use App\Jobs\RebuildAgencyPropertyCustomerMatches;
 use App\Models\Agency;
 use App\Models\Customer;
 use App\Models\MatchNotification;
+use App\Models\MatchNotificationRead;
 use App\Models\Owner;
 use App\Models\Property;
 use App\Models\PropertyCustomerMatch;
 use App\Models\User;
 use Illuminate\Support\Facades\Bus;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\DomainTestCase;
 
 final class PropertyCustomerMatchingTest extends DomainTestCase
 {
+    public function test_existing_sale_score_and_fingerprint_are_unchanged_by_ranking(): void
+    {
+        ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
+        $this->establish($manager);
+        $property = $this->property($agency, $manager, $agent)->refresh();
+        $customer = $this->customer($agency, $manager, $agent)->refresh();
+        $service = app(PropertyCustomerMatchingService::class);
+        $candidate = $service->calculate($property, $customer);
+
+        self::assertNotNull($candidate);
+        self::assertSame(42.5, $candidate->score);
+        self::assertSame(30.0, $candidate->financialScore);
+        self::assertSame(12.5, $candidate->areaScore);
+        self::assertSame(0.0, $candidate->featureScore);
+        self::assertSame(MatchMode::Direct, $candidate->mode);
+
+        $service->rebuildForAgency((int) $agency->getKey());
+        $match = PropertyCustomerMatch::query()->sole();
+        self::assertSame($candidate->fingerprint, $match->fingerprint);
+        self::assertSame('42.50', $match->score);
+        self::assertSame('30.00', $match->financial_score);
+        self::assertSame('12.50', $match->area_score);
+        self::assertSame('0.00', $match->feature_score);
+    }
+
+    /** @param array<string, mixed> $propertyChanges
+     * @param  array<string, mixed>  $customerChanges
+     */
+    #[DataProvider('disqualifyingChanges')]
+    public function test_top_twenty_does_not_relax_existing_matching_conditions(array $propertyChanges, array $customerChanges): void
+    {
+        ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
+        $this->establish($manager);
+        $property = $this->property($agency, $manager, $agent)->forceFill($propertyChanges);
+        $customer = $this->customer($agency, $manager, $agent)->forceFill($customerChanges);
+
+        self::assertNull(app(PropertyCustomerMatchingService::class)->calculate($property, $customer));
+    }
+
+    /** @return array<string, array{array<string, mixed>, array<string, mixed>}> */
+    public static function disqualifyingChanges(): array
+    {
+        return [
+            'old property' => [['matching_eligible_at' => null], []],
+            'old customer' => [[], ['matching_eligible_at' => null]],
+            'unavailable property' => [['status' => PropertyStatus::Reserved], []],
+            'inactive customer' => [[], ['status' => CustomerStatus::Withdrawn]],
+            'different property type' => [[], ['desired_property_type' => PropertyType::Industrial->value]],
+            'wrong transaction intent' => [[], ['intent' => CustomerIntent::Rent]],
+            'different city' => [[], ['desired_city' => 'Shiraz']],
+            'different district' => [[], ['desired_district' => 'District 2']],
+            'outside financial range' => [[], ['budget_max' => '4500000.00']],
+            'missing financial range' => [[], ['budget_max' => null]],
+            'outside area range' => [[], ['min_area_sqm' => '105.00']],
+            'missing area range' => [[], ['max_area_sqm' => null]],
+            'insufficient bedrooms' => [[], ['min_bedrooms' => 3]],
+            'insufficient parking' => [[], ['min_parking_spaces' => 2]],
+            'missing required storage' => [['has_storage_room' => false], ['has_storage_room' => true]],
+            'missing required elevator' => [['has_elevator' => false], ['has_elevator' => true]],
+            'missing required balcony' => [['has_balcony' => false], ['has_balcony' => true]],
+        ];
+    }
+
     public function test_direct_sale_match_is_scoped_to_one_agency_and_ignores_old_records(): void
     {
         ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
@@ -186,25 +252,167 @@ final class PropertyCustomerMatchingTest extends DomainTestCase
         self::assertNull(app(PropertyCustomerMatchingService::class)->calculate($property, $customer));
     }
 
-    public function test_only_mutual_top_ten_candidates_are_persisted(): void
+    public function test_property_top_twenty_does_not_discard_customer_side_matches(): void
     {
         ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
         $this->establish($manager);
         $property = $this->property($agency, $manager, $agent);
         $customers = [];
-        for ($index = 0; $index < 11; $index++) {
-            $customers[] = $this->customer($agency, $manager, $agent);
+        for ($index = 0; $index < 25; $index++) {
+            $customers[] = $this->customer($agency, $manager, $agent, [
+                'created_at' => now()->subMinutes(25 - $index),
+            ]);
+        }
+
+        $service = app(PropertyCustomerMatchingService::class);
+        $service->rebuildForAgency((int) $agency->getKey());
+
+        self::assertSame(25, PropertyCustomerMatch::query()->count());
+        self::assertSame(25, MatchNotification::query()->count());
+        self::assertSame(5, PropertyCustomerMatch::query()->whereNull('property_rank')->count());
+        self::assertSame(range(1, 20), PropertyCustomerMatch::query()
+            ->where('property_id', $property->getKey())
+            ->whereNotNull('property_rank')
+            ->orderBy('property_rank')->pluck('property_rank')->all());
+        self::assertSame(array_reverse(array_map(
+            static fn (Customer $customer): int => (int) $customer->getKey(),
+            array_slice($customers, 5),
+        )), PropertyCustomerMatch::query()->whereNotNull('property_rank')
+            ->orderBy('property_rank')->pluck('customer_id')->all());
+        self::assertDatabaseHas('property_customer_matches', [
+            'property_id' => $property->getKey(),
+            'customer_id' => $customers[0]->getKey(),
+            'property_rank' => null,
+            'customer_rank' => 1,
+        ]);
+        $matchIds = PropertyCustomerMatch::query()->orderBy('id')->pluck('id')->all();
+        $notificationIds = MatchNotification::query()->orderBy('id')->pluck('id')->all();
+
+        $service->rebuildForAgency((int) $agency->getKey());
+
+        self::assertSame($matchIds, PropertyCustomerMatch::query()->orderBy('id')->pluck('id')->all());
+        self::assertSame($notificationIds, MatchNotification::query()->orderBy('id')->pluck('id')->all());
+        self::assertSame(0, MatchNotification::query()->where('version', '!=', 1)->count());
+    }
+
+    public function test_customer_top_twenty_does_not_discard_property_side_matches(): void
+    {
+        ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
+        $this->establish($manager);
+        $customer = $this->customer($agency, $manager, $agent);
+        $properties = [];
+        for ($index = 0; $index < 25; $index++) {
+            $properties[] = $this->property($agency, $manager, $agent, [
+                'created_at' => now()->subMinutes(25 - $index),
+            ]);
         }
 
         app(PropertyCustomerMatchingService::class)->rebuildForAgency((int) $agency->getKey());
 
-        self::assertSame(10, PropertyCustomerMatch::query()->count());
+        self::assertSame(25, PropertyCustomerMatch::query()->count());
+        self::assertSame(25, MatchNotification::query()->count());
+        self::assertSame(5, PropertyCustomerMatch::query()->whereNull('customer_rank')->count());
+        self::assertSame(range(1, 20), PropertyCustomerMatch::query()
+            ->where('customer_id', $customer->getKey())
+            ->whereNotNull('customer_rank')
+            ->orderBy('customer_rank')->pluck('customer_rank')->all());
+        self::assertSame(array_reverse(array_map(
+            static fn (Property $property): int => (int) $property->getKey(),
+            array_slice($properties, 5),
+        )), PropertyCustomerMatch::query()->whereNotNull('customer_rank')
+            ->orderBy('customer_rank')->pluck('property_id')->all());
+        self::assertDatabaseHas('property_customer_matches', [
+            'property_id' => $properties[0]->getKey(),
+            'customer_id' => $customer->getKey(),
+            'property_rank' => 1,
+            'customer_rank' => null,
+        ]);
+    }
+
+    public function test_union_excludes_only_pairs_outside_both_independent_top_twenty_lists(): void
+    {
+        ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
+        $this->establish($manager);
+        $properties = [];
+        $customers = [];
+        for ($index = 0; $index < 21; $index++) {
+            $createdAt = now()->subMinutes(21 - $index);
+            $properties[] = $this->property($agency, $manager, $agent, ['created_at' => $createdAt]);
+            $customers[] = $this->customer($agency, $manager, $agent, ['created_at' => $createdAt]);
+        }
+
+        app(PropertyCustomerMatchingService::class)->rebuildForAgency((int) $agency->getKey());
+
+        self::assertSame(440, PropertyCustomerMatch::query()->count());
+        self::assertSame(440, MatchNotification::query()->count());
+        self::assertSame(400, PropertyCustomerMatch::query()
+            ->whereNotNull('property_rank')->whereNotNull('customer_rank')->count());
+        self::assertSame(20, PropertyCustomerMatch::query()->whereNull('property_rank')->count());
+        self::assertSame(20, PropertyCustomerMatch::query()->whereNull('customer_rank')->count());
         self::assertDatabaseMissing('property_customer_matches', [
-            'property_id' => $property->getKey(),
+            'property_id' => $properties[0]->getKey(),
             'customer_id' => $customers[0]->getKey(),
         ]);
-        self::assertSame(10, (int) PropertyCustomerMatch::query()->max('property_rank'));
-        self::assertSame(1, (int) PropertyCustomerMatch::query()->min('customer_rank'));
+        foreach ($properties as $property) {
+            self::assertSame(20, PropertyCustomerMatch::query()->where('property_id', $property->getKey())
+                ->whereNotNull('property_rank')->count());
+        }
+        foreach ($customers as $customer) {
+            self::assertSame(20, PropertyCustomerMatch::query()->where('customer_id', $customer->getKey())
+                ->whereNotNull('customer_rank')->count());
+        }
+    }
+
+    public function test_three_valid_options_have_contiguous_ranks_and_one_notification_per_pair(): void
+    {
+        ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
+        $this->establish($manager);
+        $this->property($agency, $manager, $agent);
+        for ($index = 0; $index < 3; $index++) {
+            $this->customer($agency, $manager, $agent);
+        }
+
+        app(PropertyCustomerMatchingService::class)->rebuildForAgency((int) $agency->getKey());
+
+        self::assertSame(3, PropertyCustomerMatch::query()->count());
+        self::assertSame(3, MatchNotification::query()->count());
+        self::assertSame([1, 2, 3], PropertyCustomerMatch::query()
+            ->orderBy('property_rank')->pluck('property_rank')->all());
+        self::assertSame([1, 1, 1], PropertyCustomerMatch::query()
+            ->orderBy('property_rank')->pluck('customer_rank')->all());
+    }
+
+    public function test_rank_only_promotion_preserves_pair_notification_version_and_each_users_reads(): void
+    {
+        ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
+        $this->establish($manager);
+        $this->property($agency, $manager, $agent);
+        $customers = [];
+        for ($index = 0; $index < 21; $index++) {
+            $customers[] = $this->customer($agency, $manager, $agent, [
+                'created_at' => now()->subMinutes(21 - $index),
+            ]);
+        }
+        $service = app(PropertyCustomerMatchingService::class);
+        $service->rebuildForAgency((int) $agency->getKey());
+        $match = PropertyCustomerMatch::query()->where('customer_id', $customers[0]->getKey())->sole();
+        self::assertNull($match->property_rank);
+        $notification = MatchNotification::query()->where('property_customer_match_id', $match->getKey())->sole();
+        $readService = app(MarkMatchNotificationReadService::class);
+        $managerRead = $readService->execute($manager, $notification);
+        self::assertSame(0, MatchNotificationRead::query()->where('user_id', $agent->getKey())->count());
+        $agentRead = $readService->execute($agent, $notification);
+
+        $customers[20]->forceFill(['status' => CustomerStatus::Withdrawn])->save();
+        $service->rebuildForAgency((int) $agency->getKey());
+
+        self::assertSame(20, $match->refresh()->property_rank);
+        self::assertSame(1, $match->customer_rank);
+        self::assertSame(1, (int) $notification->refresh()->version);
+        self::assertSame($match->getKey(), (int) $notification->property_customer_match_id);
+        self::assertSame([$managerRead->getKey(), $agentRead->getKey()], MatchNotificationRead::query()
+            ->where('match_notification_id', $notification->getKey())->orderBy('id')->pluck('id')->all());
+        self::assertSame(20, MatchNotification::query()->count());
     }
 
     public function test_invalid_industrial_ranges_are_rejected(): void

@@ -4,6 +4,7 @@ import 'package:fandoogh_crm/core/auth/auth_controller.dart';
 import 'package:fandoogh_crm/core/localization/persian_date.dart';
 import 'package:fandoogh_crm/core/widgets/sync_banner.dart';
 import 'package:fandoogh_crm/features/match_notifications/data/match_notification_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -81,6 +82,7 @@ final class _AppShellState extends ConsumerState<AppShell>
     if (!mounted) return;
     ref.invalidate(matchNotificationUnreadCountProvider);
     ref.invalidate(matchNotificationsProvider);
+    ref.read(matchDataRevisionProvider.notifier).refresh();
   }
 
   @override

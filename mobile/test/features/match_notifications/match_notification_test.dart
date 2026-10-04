@@ -76,7 +76,10 @@ void main() {
 
     final updated = await repository.markRead(page.items.single);
     expect(updated.isRead, isTrue);
-    expect((await store.records('match-notifications')).single['is_read'], isTrue);
+    expect(
+      (await store.records('match-notifications')).single['is_read'],
+      isTrue,
+    );
     expect(await store.pendingCount(), 1);
     expect(
       (await store.operations()).single['path'],

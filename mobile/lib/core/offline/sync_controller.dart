@@ -4,6 +4,7 @@ import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/offline/offline_store.dart';
 import 'package:fandoogh_crm/features/customers/data/customer_repository.dart';
 import 'package:fandoogh_crm/features/properties/data/property_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final syncControllerProvider =
@@ -19,7 +20,7 @@ final class SyncController extends AsyncNotifier<List<Map<String, dynamic>>> {
   }
 
   Future<void> synchronize() async {
-    final store = ref.read(offlineStoreProvider);
+    final store = ref.read(offlineStoreProvider).scoped();
     if (!store.isConfigured || state.isLoading) return;
     state = const AsyncLoading<List<Map<String, dynamic>>>();
     try {
@@ -29,6 +30,7 @@ final class SyncController extends AsyncNotifier<List<Map<String, dynamic>>> {
       state = AsyncData(await store.operations());
       ref.invalidate(propertiesProvider);
       ref.invalidate(customersProvider);
+      ref.read(matchDataRevisionProvider.notifier).refresh();
     } catch (error, stackTrace) {
       state = AsyncError(error, stackTrace);
     }
@@ -42,6 +44,7 @@ final class SyncController extends AsyncNotifier<List<Map<String, dynamic>>> {
   Future<void> _push(OfflineStore store) async {
     final client = ref.read(apiClientProvider);
     for (final original in await store.operations()) {
+      if (store.scopeKey != ref.read(offlineStoreProvider).scopeKey) return;
       if (original['status'] == 'conflict') continue;
       final operation = Map<String, dynamic>.from(original)
         ..['status'] = 'sending'
@@ -82,6 +85,7 @@ final class SyncController extends AsyncNotifier<List<Map<String, dynamic>>> {
     var cursor = await store.cursor(resource);
     var more = true;
     while (more) {
+      if (store.scopeKey != ref.read(offlineStoreProvider).scopeKey) return;
       final response = await client.dio.get<Map<String, dynamic>>(
         '/sync',
         queryParameters: <String, Object?>{

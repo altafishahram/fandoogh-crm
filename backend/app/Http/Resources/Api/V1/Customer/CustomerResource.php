@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Api\V1\Customer;
 
+use App\Application\Matching\Services\RelatedMatchQuery;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +25,7 @@ final class CustomerResource extends JsonResource
             'preferred_contact_method' => $this->resource->preferred_contact_method->value,
             'intent' => $this->resource->intent->value,
             'status' => $this->resource->status->value,
+            'match_summary' => RelatedMatchQuery::summaryOf($this->resource),
             'preferred_property_types' => $this->resource->preferred_property_types,
             'desired_property_type' => $this->resource->desired_property_type,
             'building_type' => $this->resource->building_type,
@@ -47,6 +49,9 @@ final class CustomerResource extends JsonResource
             'budget_min' => $this->resource->budget_min,
             'budget_max' => $this->resource->budget_max,
             'desired_city' => $this->resource->desired_city,
+            'desired_province_id' => $this->resource->desired_province_id,
+            'desired_county_id' => $this->resource->desired_county_id,
+            'desired_city_id' => $this->resource->desired_city_id,
             'desired_district' => $this->resource->desired_district,
             'min_area_sqm' => $this->resource->min_area_sqm,
             'max_area_sqm' => $this->resource->max_area_sqm,

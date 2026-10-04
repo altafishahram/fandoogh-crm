@@ -2,15 +2,18 @@ import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/network/api_repository.dart';
 import 'package:fandoogh_crm/core/network/paged_result.dart';
 import 'package:fandoogh_crm/core/offline/offline_store.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_summary.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-final customerRepositoryProvider = Provider<CustomerRepository>(
-  (ref) => CustomerRepository(
+final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
+  ref.watch(matchIdentityProvider);
+  return CustomerRepository(
     ref.watch(apiClientProvider),
-    ref.watch(offlineStoreProvider),
-  ),
-);
+    ref.watch(offlineStoreProvider).scoped(),
+  );
+});
 
 final customersProvider =
     AsyncNotifierProvider<CustomersController, PagedResult<CustomerRecord>>(
@@ -18,6 +21,8 @@ final customersProvider =
     );
 
 final customerProvider = FutureProvider.family<CustomerRecord, int>((ref, id) {
+  ref.watch(matchSessionProvider);
+  ref.watch(matchDataRevisionProvider);
   return ref.watch(customerRepositoryProvider).find(id);
 });
 
@@ -48,6 +53,8 @@ final class CustomerRecord {
   String get createdAt => data['created_at'] as String? ?? '';
   int get lockVersion => (data['lock_version'] as num?)?.toInt() ?? 1;
   bool get pendingSync => data['pending_sync'] == true;
+  MatchSummary? get matchSummary =>
+      MatchSummary.fromJson(data['match_summary']);
 }
 
 final class CustomersController
@@ -61,7 +68,11 @@ final class CustomersController
   String _order = 'newest';
 
   @override
-  Future<PagedResult<CustomerRecord>> build() => _load(1);
+  Future<PagedResult<CustomerRecord>> build() {
+    ref.watch(matchSessionProvider);
+    ref.watch(matchDataRevisionProvider);
+    return _load(1);
+  }
 
   Map<String, Object?> get activeFilters => <String, Object?>{
     'q': _query,
@@ -223,8 +234,20 @@ class CustomerRepository extends ApiRepository {
     }
   }
 
-  Future<CustomerRecord> update(int id, Map<String, Object?> data) async =>
-      CustomerRecord.fromJson(await patch('/customers/$id', data));
+  Future<CustomerRecord> update(int id, Map<String, Object?> data) async {
+    final item = await patch('/customers/$id', data);
+    if (offlineStore?.isConfigured == true) {
+      await offlineStore!.mergeRecords('customers', <Map<String, dynamic>>[
+        item,
+      ]);
+      await offlineStore!.replaceRecords(
+        'related-matches',
+        <Map<String, dynamic>>[],
+      );
+    }
+    return CustomerRecord.fromJson(item);
+  }
+
   Future<List<Map<String, dynamic>>> notes(int id) =>
       getList('/customers/$id/notes');
   Future<Map<String, dynamic>> addNote(int id, String body) =>
@@ -255,6 +278,12 @@ class CustomerRepository extends ApiRepository {
         propertyType != '' &&
         '${item['desired_property_type']}' != '$propertyType') {
       return false;
+    }
+    for (final key in ['province_id', 'county_id', 'city_id']) {
+      final expected = filters[key];
+      if (expected != null && '${item['desired_$key']}' != '$expected') {
+        return false;
+      }
     }
     for (final entry in <String, String>{
       'city': 'desired_city',

@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Application\Customer\Services\CreateCustomerService;
 use App\Application\Customer\Services\UpdateCustomerService;
+use App\Application\Geography\Services\LocationQuery;
+use App\Application\Matching\Services\RelatedMatchQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Customer\StoreCustomerRequest;
 use App\Http\Requests\Api\V1\Customer\UpdateCustomerRequest;
@@ -20,12 +22,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class CustomerController extends Controller
 {
+    public function __construct(private readonly RelatedMatchQuery $matches) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Customer::class);
         /** @var User $user */
         $user = $request->user();
         $validated = $request->validate([
+            'province_id' => ['nullable', 'integer'], 'county_id' => ['nullable', 'integer'], 'city_id' => ['nullable', 'integer'],
             'q' => ['nullable', 'string', 'max:200'], 'status' => ['nullable', 'string'],
             'intent' => ['nullable', 'string'], 'per_page' => ['nullable', 'integer', 'between:1,100'],
             'property_type' => ['nullable', 'string'], 'district' => ['nullable', 'string', 'max:100'],
@@ -55,6 +60,7 @@ final class CustomerController extends Controller
             'order' => ['nullable', 'in:newest,oldest'],
         ]);
         $query = Customer::query();
+        app(LocationQuery::class)->apply($query, $validated, 'desired_');
         foreach (['status', 'intent'] as $field) {
             if (isset($validated[$field])) {
                 $query->where($field, $validated[$field]);
@@ -114,7 +120,8 @@ final class CustomerController extends Controller
             ? $query->orderBy('created_at')->orderBy('id')
             : $query->orderByDesc('created_at')->orderByDesc('id');
 
-        return CustomerResource::collection($query->paginate($validated['per_page'] ?? 25));
+        return CustomerResource::collection($this->matches->withSummaries($query, $user, 'customer')
+            ->paginate($validated['per_page'] ?? 25));
     }
 
     public function store(StoreCustomerRequest $request, CreateCustomerService $service): JsonResponse
@@ -123,15 +130,17 @@ final class CustomerController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return (new CustomerResource($service->execute($user, $request->toData())))
+        return (new CustomerResource($this->matches->loadSummary($service->execute($user, $request->toData()), $user)))
             ->response()->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(Customer $customer): CustomerResource
+    public function show(Request $request, Customer $customer): CustomerResource
     {
         Gate::authorize('view', $customer);
+        /** @var User $user */
+        $user = $request->user();
 
-        return new CustomerResource($customer);
+        return new CustomerResource($this->matches->loadSummary($customer, $user));
     }
 
     public function update(
@@ -147,6 +156,6 @@ final class CustomerController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        return new CustomerResource($service->execute($user, $customer, $request->toData()));
+        return new CustomerResource($this->matches->loadSummary($service->execute($user, $customer, $request->toData()), $user));
     }
 }

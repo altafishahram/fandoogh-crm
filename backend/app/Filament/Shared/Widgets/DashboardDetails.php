@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Shared\Widgets;
 
 use App\Application\Dashboard\Services\DashboardService;
+use App\Domain\Tenancy\TenantContext;
 use App\Filament\Agency\Resources\Customers\CustomerResource as AgencyCustomerResource;
 use App\Filament\Agency\Resources\Properties\PropertyResource as AgencyPropertyResource;
 use App\Filament\Agent\Resources\Customers\CustomerResource as AgentCustomerResource;
@@ -27,8 +28,16 @@ abstract class DashboardDetails extends Widget
 
     public function mount(): void
     {
+        $this->refreshMatches();
+    }
+
+    public function refreshMatches(): void
+    {
         $user = auth()->user();
         abort_unless($user instanceof User, 401);
+        app(TenantContext::class)->establish($user);
+        $panel = Filament::getCurrentPanel();
+        abort_unless($panel !== null && $user->canAccessPanel($panel), 403);
         $this->data = app(DashboardService::class)->for($user);
         $agentPanel = Filament::getCurrentPanel()?->getId() === 'agent';
         $propertyResource = $agentPanel ? AgentPropertyResource::class : AgencyPropertyResource::class;

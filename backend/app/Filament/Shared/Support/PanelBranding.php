@@ -13,7 +13,8 @@ final class PanelBranding
     public static function apply(Panel $panel, string $section): Panel
     {
         return $panel
-            ->brandName("ملک بان · {$section}")
+            ->brandName(config('app.name')." · {$section}")
+            ->sidebarWidth('16rem')
             ->colors([
                 'primary' => Color::hex('#0F766E'),
                 'gray' => Color::hex('#68817E'),

@@ -70,12 +70,16 @@ final readonly class CreateCustomerData
         public ?string $landAreaMax = null,
         public ?string $buildingAreaMin = null,
         public ?string $buildingAreaMax = null,
+        public ?int $desiredProvinceId = null,
+        public ?int $desiredCountyId = null,
+        public ?int $desiredCityId = null,
     ) {}
 
     /** @return array<string, mixed> */
     public function attributes(): array
     {
         return [
+            'desired_province_id' => $this->desiredProvinceId, 'desired_county_id' => $this->desiredCountyId, 'desired_city_id' => $this->desiredCityId,
             'first_name' => $this->firstName, 'last_name' => $this->lastName,
             'mobile' => $this->mobile, 'phone' => $this->phone, 'email' => $this->email,
             'preferred_contact_method' => $this->preferredContactMethod, 'intent' => $this->intent,

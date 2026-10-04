@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Domain\Tenancy\TenantContext;
+use App\Domain\User\Enums\RoleName;
 use App\Filament\Agency\Resources\MatchNotifications\MatchNotificationResource as AgencyMatchNotificationResource;
 use App\Filament\Agent\Resources\MatchNotifications\MatchNotificationResource as AgentMatchNotificationResource;
 use App\Models\MatchNotification;
@@ -26,11 +28,13 @@ final class MatchNotificationPoller extends Component
 
     public function mount(): void
     {
-        $this->notificationUrl = Filament::getCurrentPanel()?->getId() === 'agent'
-            ? AgentMatchNotificationResource::getUrl('index')
-            : AgencyMatchNotificationResource::getUrl('index');
         $this->unreadCount = $this->countUnread();
         $this->lastKnownCount = $this->unreadCount;
+        $this->notificationUrl = match (Filament::getCurrentPanel()?->getId()) {
+            'agent' => AgentMatchNotificationResource::getUrl('index'),
+            'agency' => AgencyMatchNotificationResource::getUrl('index'),
+            default => '',
+        };
     }
 
     public function refreshUnread(): void
@@ -61,10 +65,34 @@ final class MatchNotificationPoller extends Component
 
     private function countUnread(): int
     {
+        $context = app(TenantContext::class);
+        $context->clear();
+
         $user = auth()->user();
-        if (! $user instanceof User || $user->agency_id === null) {
+        $panel = Filament::getCurrentPanel();
+        $expectedRole = match ($panel?->getId()) {
+            'agency' => RoleName::AgencyManager,
+            'agent' => RoleName::Agent,
+            default => null,
+        };
+
+        if (! $user instanceof User || $panel === null || $expectedRole === null) {
             return 0;
         }
+
+        // Direct component updates may bypass panel middleware; never trust a
+        // stale actor, cached roles, or another tenant's request context.
+        $user = $user->fresh();
+        if ($user === null || ! $user->is_active || $user->trashed() || $user->agency_id === null) {
+            return 0;
+        }
+
+        $roles = $user->roles()->pluck('name');
+        if ($roles->count() !== 1 || $roles->first() !== $expectedRole->value || ! $user->canAccessPanel($panel)) {
+            return 0;
+        }
+
+        $context->establish($user);
 
         $notificationsTable = (new MatchNotification)->getTable();
         $readsTable = (new MatchNotificationRead)->getTable();

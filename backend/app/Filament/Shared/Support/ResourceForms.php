@@ -45,7 +45,8 @@ final class ResourceForms
             TextInput::make('phone')->label(PersianLabels::field('phone'))->tel()->required()->maxLength(30),
             TextInput::make('address_line_1')->label(PersianLabels::field('address_line_1'))->required()->maxLength(255),
             TextInput::make('address_line_2')->label(PersianLabels::field('address_line_2'))->maxLength(255),
-            TextInput::make('city')->label(PersianLabels::field('city'))->required()->maxLength(100),
+            ...LocationFields::make(),
+            TextInput::make('city')->label('شهر ثبت‌شده')->required()->maxLength(100)->helperText('اطلاعات قدیمی حفظ می‌شود؛ برای انتخاب موقعیت استاندارد از فهرست‌ها استفاده کنید.'),
             TextInput::make('province')->label(PersianLabels::field('province'))->required()->maxLength(100),
             TextInput::make('postal_code')->label(PersianLabels::field('postal_code'))->maxLength(20),
             TextInput::make('country_code')->label(PersianLabels::field('country_code'))->required()->length(2)->default('IR'),
@@ -200,7 +201,8 @@ final class ResourceForms
                     Select::make('status')->label('وضعیت ملک')->options(PersianLabels::options(PropertyStatus::cases()))
                         ->default(PropertyStatus::Available->value),
                     ...($agent ? [] : [Select::make('assigned_agent_id')->label('کارشناس مسئول')->searchable()->options(fn (): array => self::agentOptions())]),
-                    TextInput::make('city')->label('شهر')->maxLength(100),
+                    ...LocationFields::make('', true),
+                    TextInput::make('city')->label('شهر ثبت‌شده')->maxLength(100),
                     TextInput::make('district')->label('محله')->required()->maxLength(100),
                 ])->columns(2),
                 Step::make('مبلغ و نشانی')->description('مبالغ، متراژ و وضعیت تحویل')->schema([
@@ -435,7 +437,8 @@ final class ResourceForms
                         ->options(PropertyFeatureOptions::BUILDING_TYPES)
                         ->required(fn (Get $get): bool => self::isHouseVilla($get('desired_property_type')))
                         ->visible(fn (Get $get): bool => self::isHouseVilla($get('desired_property_type'))),
-                    TextInput::make('desired_city')->label('شهر موردنظر')->maxLength(100),
+                    ...LocationFields::make('desired_', true),
+                    TextInput::make('desired_city')->label('شهر ثبت‌شده')->maxLength(100),
                     TextInput::make('desired_district')->label('محله موردنظر')->maxLength(100),
                     TextInput::make('min_area_sqm')->label('حداقل متراژ')->required(fn (Get $get): bool => $get('desired_property_type') !== PropertyType::Industrial->value)
                         ->hidden(fn (Get $get): bool => $get('desired_property_type') === PropertyType::Industrial->value)

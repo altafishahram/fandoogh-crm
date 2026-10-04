@@ -25,6 +25,10 @@ final class UpdatePropertyRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'province_id' => ['sometimes', 'nullable', 'integer'],
+            'county_id' => ['sometimes', 'nullable', 'integer'],
+            'city_id' => ['sometimes', 'nullable', 'integer'],
+
             'agency_id' => ['prohibited'], 'code' => ['prohibited'], 'currency_code' => ['prohibited'],
             'status' => ['prohibited'], 'created_by_user_id' => ['prohibited'], 'owners' => ['prohibited'],
             'expected_updated_at' => ['required_without:expected_version', 'date'],

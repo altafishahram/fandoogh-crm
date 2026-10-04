@@ -7,6 +7,9 @@ import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/core/widgets/section_card.dart';
 import 'package:fandoogh_crm/core/widgets/text_input_dialog.dart';
 import 'package:fandoogh_crm/features/customers/data/customer_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_summary.dart';
+import 'package:fandoogh_crm/features/match_notifications/presentation/related_match_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +38,7 @@ final class CustomerDetailPage extends ConsumerWidget {
                       );
                       if (changed == true) {
                         ref.invalidate(customerProvider(customerId));
+                        ref.read(matchDataRevisionProvider.notifier).refresh();
                       }
                     }
                   : null,
@@ -87,6 +91,10 @@ final class _CustomerOverview extends ConsumerWidget {
             children: <Widget>[
               Chip(label: Text(labelOf(customerStatuses, customer.status))),
               Chip(label: Text(labelOf(customerIntents, customer.intent))),
+              RelatedMatchBadge(
+                scope: RelatedMatchScope.customer(customer.id),
+                summary: customer.matchSummary,
+              ),
             ],
           ),
         ),
@@ -150,15 +158,19 @@ final class _CustomerOverview extends ConsumerWidget {
                 _row(
                   'متراژ زمین',
                   _areaRange(
-                    customer.data['land_area_min'] ?? customer.data['land_area'],
-                    customer.data['land_area_max'] ?? customer.data['land_area'],
+                    customer.data['land_area_min'] ??
+                        customer.data['land_area'],
+                    customer.data['land_area_max'] ??
+                        customer.data['land_area'],
                   ),
                 ),
                 _row(
                   'متراژ بنا',
                   _areaRange(
-                    customer.data['building_area_min'] ?? customer.data['building_area'],
-                    customer.data['building_area_max'] ?? customer.data['building_area'],
+                    customer.data['building_area_min'] ??
+                        customer.data['building_area'],
+                    customer.data['building_area_max'] ??
+                        customer.data['building_area'],
                   ),
                 ),
               ],

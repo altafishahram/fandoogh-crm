@@ -149,21 +149,24 @@ final class PropertyCustomerMatchingTest extends DomainTestCase
         self::assertSame(0, MatchNotification::query()->count());
     }
 
-    public function test_each_side_keeps_at_most_ten_mutual_matches(): void
+    public function test_top_twenty_ranks_preserve_all_twenty_five_customer_side_pairs(): void
     {
         ['agency' => $agency, 'manager' => $manager, 'agent' => $agent] = $this->tenant();
         $this->establish($manager);
 
         $property = $this->saleProperty($agency, $manager, $agent);
-        for ($index = 0; $index < 11; $index++) {
+        for ($index = 0; $index < 25; $index++) {
             $this->buyCustomer($agency, $manager, $agent, now()->subMinutes($index));
         }
 
         app(PropertyCustomerMatchingService::class)->rebuildForAgency((int) $agency->getKey());
 
-        self::assertSame(10, PropertyCustomerMatch::query()->count());
-        self::assertSame(10, MatchNotification::query()->count());
-        self::assertSame(10, PropertyCustomerMatch::query()->where('property_id', $property->getKey())->count());
+        self::assertSame(25, PropertyCustomerMatch::query()->count());
+        self::assertSame(25, MatchNotification::query()->count());
+        self::assertSame(20, PropertyCustomerMatch::query()->where('property_id', $property->getKey())
+            ->whereNotNull('property_rank')->count());
+        self::assertSame(5, PropertyCustomerMatch::query()->where('property_id', $property->getKey())
+            ->whereNull('property_rank')->where('customer_rank', 1)->count());
     }
 
     private function saleProperty(Agency $agency, User $manager, User $agent, ?Carbon $eligibleAt = null): Property

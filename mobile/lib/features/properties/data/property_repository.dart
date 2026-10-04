@@ -2,15 +2,18 @@ import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/network/api_repository.dart';
 import 'package:fandoogh_crm/core/network/paged_result.dart';
 import 'package:fandoogh_crm/core/offline/offline_store.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_summary.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-final propertyRepositoryProvider = Provider<PropertyRepository>(
-  (ref) => PropertyRepository(
+final propertyRepositoryProvider = Provider<PropertyRepository>((ref) {
+  ref.watch(matchIdentityProvider);
+  return PropertyRepository(
     ref.watch(apiClientProvider),
-    ref.watch(offlineStoreProvider),
-  ),
-);
+    ref.watch(offlineStoreProvider).scoped(),
+  );
+});
 
 final propertiesProvider =
     AsyncNotifierProvider<PropertiesController, PagedResult<PropertyRecord>>(
@@ -21,6 +24,8 @@ final propertyProvider = FutureProvider.family<PropertyRecord, int>((
   ref,
   id,
 ) async {
+  ref.watch(matchSessionProvider);
+  ref.watch(matchDataRevisionProvider);
   return ref.watch(propertyRepositoryProvider).find(id);
 });
 
@@ -57,6 +62,8 @@ final class PropertyRecord {
   String get createdAt => data['created_at'] as String? ?? '';
   int get lockVersion => (data['lock_version'] as num?)?.toInt() ?? 1;
   bool get pendingSync => data['pending_sync'] == true;
+  MatchSummary? get matchSummary =>
+      MatchSummary.fromJson(data['match_summary']);
   List<Map<String, dynamic>> get owners {
     final value = data['owners'];
     return value is List
@@ -84,7 +91,11 @@ final class PropertiesController
   String _order = 'newest';
 
   @override
-  Future<PagedResult<PropertyRecord>> build() => _load(1);
+  Future<PagedResult<PropertyRecord>> build() {
+    ref.watch(matchSessionProvider);
+    ref.watch(matchDataRevisionProvider);
+    return _load(1);
+  }
 
   Map<String, Object?> get activeFilters => <String, Object?>{
     'q': _query,
@@ -285,8 +296,19 @@ class PropertyRepository extends ApiRepository {
     }
   }
 
-  Future<PropertyRecord> update(int id, Map<String, Object?> data) async =>
-      PropertyRecord.fromJson(await patch('/properties/$id', data));
+  Future<PropertyRecord> update(int id, Map<String, Object?> data) async {
+    final item = await patch('/properties/$id', data);
+    if (offlineStore?.isConfigured == true) {
+      await offlineStore!.mergeRecords('properties', <Map<String, dynamic>>[
+        item,
+      ]);
+      await offlineStore!.replaceRecords(
+        'related-matches',
+        <Map<String, dynamic>>[],
+      );
+    }
+    return PropertyRecord.fromJson(item);
+  }
 
   Future<PropertyRecord> changeStatus(
     int id, {
@@ -313,6 +335,12 @@ class PropertyRepository extends ApiRepository {
       await offlineStore?.mergeRecords('properties', <Map<String, dynamic>>[
         item,
       ]);
+      if (offlineStore?.isConfigured == true) {
+        await offlineStore!.replaceRecords(
+          'related-matches',
+          <Map<String, dynamic>>[],
+        );
+      }
       return PropertyRecord.fromJson(item);
     } catch (error) {
       if (!_isNetwork(error) || offlineStore?.isConfigured != true) rethrow;
@@ -333,11 +361,13 @@ class PropertyRepository extends ApiRepository {
         ...?source,
         'id': id,
         'status': status,
+        'match_summary': null,
         'pending_sync': true,
       };
       await offlineStore!.mergeRecords('properties', <Map<String, dynamic>>[
         local,
       ]);
+      await offlineStore!.invalidateMatchData();
       return PropertyRecord.fromJson(local);
     }
   }
@@ -399,6 +429,10 @@ class PropertyRepository extends ApiRepository {
       if (expected != null && expected != '' && '${item[key]}' != '$expected') {
         return false;
       }
+    }
+    for (final key in ['province_id', 'county_id', 'city_id']) {
+      final expected = filters[key];
+      if (expected != null && '${item[key]}' != '$expected') return false;
     }
     for (final key in <String>['city', 'district']) {
       final expected = '${filters[key] ?? ''}'.trim().toLowerCase();

@@ -25,6 +25,10 @@ final class UpdateCustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'desired_province_id' => ['sometimes', 'nullable', 'integer'],
+            'desired_county_id' => ['sometimes', 'nullable', 'integer'],
+            'desired_city_id' => ['sometimes', 'nullable', 'integer'],
+
             'agency_id' => ['prohibited'], 'created_by_user_id' => ['prohibited'],
             'expected_updated_at' => ['required_without:expected_version', 'date'],
             'expected_version' => ['required_without:expected_updated_at', 'integer', 'min:1'],

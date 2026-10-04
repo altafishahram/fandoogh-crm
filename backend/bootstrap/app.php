@@ -34,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         then: static function (): void {
             Route::get('/up', static fn () => response()->json([
-                'name' => 'ملک بان',
+                'name' => config('app.name'),
                 'status' => 'ok',
             ]))->name('health');
         },

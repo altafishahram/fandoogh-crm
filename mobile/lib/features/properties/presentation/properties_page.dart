@@ -1,3 +1,4 @@
+import 'package:fandoogh_crm/features/geography/geography.dart';
 import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/network/paged_result.dart';
 import 'package:fandoogh_crm/core/localization/persian_number.dart';
@@ -24,6 +25,7 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
   String? _type;
   String? _transaction;
   String? _city;
+  RegionSelection _region = const RegionSelection();
   String? _district;
   String? _areaMin;
   String? _areaMax;
@@ -39,6 +41,8 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
   @override
   void initState() {
     super.initState();
+    _region = agencyRegion(ref);
+    if (_region.provinceId != null) Future<void>.microtask(_apply);
     Future<void>.microtask(_restoreCardView);
   }
 
@@ -393,6 +397,7 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
           bedroomsMin: _bedroomsMin,
           features: <String, Object?>{
             'city': _city,
+            ..._region.toJson(),
             if (_transaction == 'sale') ...<String, Object?>{
               'sale_price_min': _priceMin,
               'sale_price_max': _priceMax,
@@ -407,6 +412,7 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
     var status = _status;
     var type = _type;
     var transaction = _transaction;
+    var region = _region;
     var step = 0;
     final district = TextEditingController(text: _district);
     final city = TextEditingController(text: _city);
@@ -529,10 +535,13 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
                     }),
                   ),
                   const SizedBox(height: 10),
-                  TextField(
-                    controller: city,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'شهر'),
+                  RegionFields(
+                    value: region,
+                    onChanged: (value) => setSheetState(() {
+                      region = value;
+                      city.text = value.cityName ?? '';
+                      district.clear();
+                    }),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -765,7 +774,9 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
         _status = status;
         _type = type;
         _transaction = transaction;
-        _city = _nullable(city.text);
+        _region = region;
+        _city = null;
+        _region = const RegionSelection();
         _district = _nullable(district.text);
         _areaMin = _nullable(areaMin.text);
         _areaMax = _nullable(areaMax.text);
@@ -824,6 +835,7 @@ final class _PropertiesPageState extends ConsumerState<PropertiesPage> {
       _status != null ||
       _type != null ||
       _transaction != null ||
+      _region.provinceId != null ||
       _city != null ||
       _district != null ||
       _areaMin != null ||

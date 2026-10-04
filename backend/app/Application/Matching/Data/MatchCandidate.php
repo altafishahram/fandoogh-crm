@@ -27,7 +27,7 @@ final readonly class MatchCandidate
         public ?int $customerRank = null,
     ) {}
 
-    public function withRanks(int $propertyRank, int $customerRank): self
+    public function withRanks(?int $propertyRank, ?int $customerRank): self
     {
         return new self(
             $this->propertyId,

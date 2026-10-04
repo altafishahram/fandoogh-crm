@@ -23,6 +23,10 @@ final class StoreCustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'desired_province_id' => ['sometimes', 'nullable', 'integer'],
+            'desired_county_id' => ['sometimes', 'nullable', 'integer'],
+            'desired_city_id' => ['sometimes', 'nullable', 'integer'],
+
             'agency_id' => ['prohibited'], 'created_by_user_id' => ['prohibited'],
             'status' => ['prohibited'], 'converted_property_id' => ['prohibited'],
             'assigned_agent_id' => ['nullable', 'integer', 'min:1'],
@@ -142,6 +146,9 @@ final class StoreCustomerRequest extends FormRequest
             isset($data['land_area_max']) ? (string) $data['land_area_max'] : null,
             isset($data['building_area_min']) ? (string) $data['building_area_min'] : null,
             isset($data['building_area_max']) ? (string) $data['building_area_max'] : null,
+            isset($data['desired_province_id']) ? (int) $data['desired_province_id'] : null,
+            isset($data['desired_county_id']) ? (int) $data['desired_county_id'] : null,
+            isset($data['desired_city_id']) ? (int) $data['desired_city_id'] : null,
         );
     }
 

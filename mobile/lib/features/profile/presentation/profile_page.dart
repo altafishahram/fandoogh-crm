@@ -4,6 +4,7 @@ import 'package:fandoogh_crm/core/offline/sync_controller.dart';
 import 'package:fandoogh_crm/core/widgets/glass_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 final class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -17,7 +18,17 @@ final class ProfilePage extends ConsumerWidget {
         ? Map<String, dynamic>.from(user['agency'] as Map)
         : <String, dynamic>{};
     return Scaffold(
-      appBar: AppBar(title: const Text('حساب من')),
+      appBar: AppBar(
+        title: const Text('حساب من'),
+        actions: [
+          if (auth.isManager)
+            IconButton(
+              tooltip: 'موقعیت پیش‌فرض آژانس',
+              onPressed: () => context.push('/agency-location'),
+              icon: const Icon(Icons.location_on_outlined),
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[

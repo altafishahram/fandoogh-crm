@@ -14,6 +14,7 @@ use App\Domain\Property\Enums\TransactionType;
 use App\Domain\Shared\Exceptions\DomainConflictException;
 use App\Domain\User\Enums\RoleName;
 use App\Models\Property;
+use App\Models\PropertyPublication;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -56,6 +57,10 @@ final readonly class ChangePropertyStatusService
             $locked->matching_eligible_at = now();
             $locked->lock_version = (int) $locked->lock_version + 1;
             $locked = $this->properties->save($locked);
+            if ($to !== PropertyStatus::Available) {
+                PropertyPublication::query()->where('property_id', $locked->getKey())
+                    ->update(['share_with_agencies' => false, 'publish_public' => false, 'version' => DB::raw('version + 1')]);
+            }
             $action = match (true) {
                 $to === PropertyStatus::Archived => PropertyHistoryAction::Archived,
                 $from === PropertyStatus::Archived => PropertyHistoryAction::Unarchived,

@@ -1,9 +1,13 @@
+import 'dart:async';
+
+import 'package:fandoogh_crm/core/auth/auth_controller.dart';
+import 'package:fandoogh_crm/core/auth/auth_state.dart';
 import 'package:fandoogh_crm/core/localization/persian_date.dart';
-import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/core/widgets/glass_panel.dart';
 import 'package:fandoogh_crm/features/match_notifications/data/match_notification.dart';
 import 'package:fandoogh_crm/features/match_notifications/data/match_notification_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,7 +23,30 @@ final class MatchNotificationDetailPage extends ConsumerStatefulWidget {
 
 final class _MatchNotificationDetailPageState
     extends ConsumerState<MatchNotificationDetailPage> {
-  bool _readRequested = false;
+  MatchNotification? _viewedItem;
+  String? _viewedIdentity;
+  late ProviderContainer _container;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _container = ProviderScope.containerOf(context, listen: false);
+  }
+
+  @override
+  void dispose() {
+    final item = _viewedItem;
+    // Reading is tied to leaving a successfully rendered detail, never to
+    // opening a list. Do not send an old tenant's read after an access change.
+    if (item != null &&
+        !item.isRead &&
+        _container.read(authControllerProvider).status == AuthStatus.signedIn &&
+        _container.read(matchIdentityProvider) == _viewedIdentity) {
+      final repository = _container.read(matchNotificationRepositoryProvider);
+      unawaited(repository.markRead(item).catchError((Object _) => item));
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,31 +66,13 @@ final class _MatchNotificationDetailPageState
             ),
           ),
           data: (item) {
-            _requestReadIfNeeded(item);
+            _viewedItem = item;
+            _viewedIdentity = ref.read(matchIdentityProvider);
             return _NotificationDetailBody(notification: item);
           },
         ),
       ),
     );
-  }
-
-  void _requestReadIfNeeded(MatchNotification item) {
-    if (item.isRead || _readRequested) return;
-    _readRequested = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      try {
-        await ref.read(matchNotificationRepositoryProvider).markRead(item);
-        ref.invalidate(matchNotificationsProvider);
-        ref.invalidate(matchNotificationUnreadCountProvider);
-      } catch (error) {
-        if (!mounted) return;
-        final failure = apiFailureFrom(error);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(failure.message)));
-      }
-    });
   }
 }
 

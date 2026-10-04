@@ -1,3 +1,7 @@
+import 'package:fandoogh_crm/features/geography/agency_location_page.dart';
+import 'package:fandoogh_crm/features/marketplace/presentation/marketplace_pages.dart';
+import 'package:fandoogh_crm/features/marketplace/presentation/publication_page.dart';
+import 'package:fandoogh_crm/features/chat/chat_pages.dart';
 import 'package:fandoogh_crm/core/auth/auth_controller.dart';
 import 'package:fandoogh_crm/core/auth/auth_state.dart';
 import 'package:fandoogh_crm/features/auth/presentation/change_password_page.dart';
@@ -7,6 +11,8 @@ import 'package:fandoogh_crm/features/auth/presentation/suspended_page.dart';
 import 'package:fandoogh_crm/features/dashboard/presentation/dashboard_page.dart';
 import 'package:fandoogh_crm/features/match_notifications/presentation/match_notification_detail_page.dart';
 import 'package:fandoogh_crm/features/match_notifications/presentation/match_notifications_page.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_summary.dart';
+import 'package:fandoogh_crm/features/match_notifications/presentation/related_matches_page.dart';
 import 'package:fandoogh_crm/features/customers/presentation/customer_detail_page.dart';
 import 'package:fandoogh_crm/features/customers/presentation/customer_form_page.dart';
 import 'package:fandoogh_crm/features/customers/presentation/customers_page.dart';
@@ -26,6 +32,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     redirect: (context, state) => _redirect(auth, state.uri.path),
     routes: <RouteBase>[
+      GoRoute(
+        path: '/agency-location',
+        builder: (_, _) => const AgencyLocationPage(),
+      ),
+      GoRoute(path: '/marketplace', builder: (_, _) => const MarketplacePage()),
+      GoRoute(
+        path: '/marketplace/:id',
+        builder: (_, s) => ListingDetailPage(
+          id: int.parse(s.pathParameters['id']!),
+          audience: s.uri.queryParameters['audience'] ?? 'public',
+        ),
+      ),
+      GoRoute(
+        path: '/properties/:id/publication',
+        builder: (_, s) =>
+            PublicationPage(propertyId: int.parse(s.pathParameters['id']!)),
+      ),
+      ...chatRoutes,
       GoRoute(path: '/splash', builder: (_, _) => const SplashPage()),
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
       GoRoute(
@@ -61,6 +85,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ),
                 routes: <RouteBase>[
                   GoRoute(
+                    path: 'matches',
+                    builder: (_, state) => RelatedMatchesPage(
+                      scope: RelatedMatchScope.property(
+                        int.parse(state.pathParameters['id']!),
+                      ),
+                    ),
+                  ),
+                  GoRoute(
                     path: 'edit',
                     builder: (_, state) => PropertyFormPage(
                       propertyId: int.parse(state.pathParameters['id']!),
@@ -85,6 +117,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'edit',
                     builder: (_, state) => CustomerFormPage(
                       customerId: int.parse(state.pathParameters['id']!),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'matches',
+                    builder: (_, state) => RelatedMatchesPage(
+                      scope: RelatedMatchScope.customer(
+                        int.parse(state.pathParameters['id']!),
+                      ),
                     ),
                   ),
                 ],

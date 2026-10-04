@@ -59,7 +59,8 @@ final class BrandSignature extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Semantics(
-      label: 'ملک بان، طراحی‌شده توسط فندوق استودیو',
+      label: 'دفتر املاکی، طراحی‌شده توسط فندوق استودیو',
+      excludeSemantics: true,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -73,7 +74,7 @@ final class BrandSignature extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                'م',
+                'د',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
@@ -83,24 +84,26 @@ final class BrandSignature extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'ملک بان',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: colors.onSurface,
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'دفتر املاکی',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: colors.onSurface,
+                  ),
                 ),
-              ),
-              Text(
-                'طراحی‌شده توسط فندوق استودیو',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colors.onSurfaceVariant,
+                Text(
+                  'طراحی‌شده توسط فندوق استودیو',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

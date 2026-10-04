@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Application\Matching\Services\RelatedMatchQuery;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\Customer\CustomerResource;
 use App\Http\Resources\Api\V1\Property\PropertyResource;
 use App\Models\Customer;
 use App\Models\Property;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,8 +19,12 @@ use Illuminate\Validation\Rule;
 
 final class SyncController extends Controller
 {
+    public function __construct(private readonly RelatedMatchQuery $matches) {}
+
     public function __invoke(Request $request): JsonResponse
     {
+        /** @var User $user */
+        $user = $request->user();
         $validated = $request->validate([
             'resource' => ['required', Rule::in(['properties', 'customers'])],
             'after' => ['nullable', 'date'],
@@ -46,7 +52,8 @@ final class SyncController extends Controller
             });
         })->orderBy('updated_at')->orderBy('id');
 
-        $items = $query->limit($limit + 1)->get();
+        $items = $this->matches->withSummaries($query, $user, $resource === 'properties' ? 'property' : 'customer')
+            ->limit($limit + 1)->get();
         $hasMore = $items->count() > $limit;
         $items = $items->take($limit)->values();
         $last = $items->last();

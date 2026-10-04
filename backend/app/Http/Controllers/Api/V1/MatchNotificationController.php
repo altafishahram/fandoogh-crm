@@ -95,7 +95,14 @@ final class MatchNotificationController extends Controller
         /** @var MatchNotification $notification */
         $notification = $this->notificationQuery($user)->findOrFail($matchNotification);
         Gate::authorize('markAsRead', $notification);
+        $version = (int) $notification->version;
+        $validated = $request->validate([
+            'notification_version' => ['nullable', 'integer', 'min:1', 'max:'.$version],
+        ]);
+        // An offline or just-closed detail may refer to an earlier version.
+        $notification->setAttribute('version', (int) ($validated['notification_version'] ?? $version));
         $read = $service->execute($user, $notification);
+        $notification->setAttribute('version', $version);
 
         $notification->setAttribute('read_version', $read->getAttribute('notification_version'));
         $notification->setAttribute('read_at', $read->getAttribute('read_at'));

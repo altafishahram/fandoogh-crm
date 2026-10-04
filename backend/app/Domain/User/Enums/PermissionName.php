@@ -6,6 +6,8 @@ namespace App\Domain\User\Enums;
 
 enum PermissionName: string
 {
+    case AgenciesVerify = 'agencies.verify';
+    case PropertiesPublish = 'properties.publish';
     case PlatformDashboardView = 'platform.dashboard.view';
     case AgenciesView = 'agencies.view';
     case AgenciesCreate = 'agencies.create';

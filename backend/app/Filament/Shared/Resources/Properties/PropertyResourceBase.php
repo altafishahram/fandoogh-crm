@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Shared\Resources\Properties;
 
+use App\Application\Matching\Services\RelatedMatchQuery;
 use App\Application\Property\Data\ChangePropertyStatusData;
 use App\Application\Property\Services\ChangePropertyStatusService;
 use App\Application\Property\Services\DeletePropertyService;
@@ -17,9 +18,13 @@ use App\Domain\User\Enums\RoleName;
 use App\Filament\Shared\RelationManagers\PropertyHistoriesRelationManager;
 use App\Filament\Shared\RelationManagers\PropertyImagesRelationManager;
 use App\Filament\Shared\RelationManagers\PropertyNotesRelationManager;
+use App\Filament\Shared\Support\LocationFields;
 use App\Filament\Shared\Support\PersianDate;
 use App\Filament\Shared\Support\PersianLabels;
+use App\Filament\Shared\Support\PublicationAction;
+use App\Filament\Shared\Support\RelatedMatchPresentation;
 use App\Filament\Shared\Support\ResourceForms;
+use App\Livewire\RelatedMatchList;
 use App\Models\Property;
 use App\Models\User;
 use BackedEnum;
@@ -33,6 +38,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
@@ -71,6 +77,10 @@ abstract class PropertyResourceBase extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
+            Livewire::make(RelatedMatchList::class, fn (Property $record): array => [
+                'side' => 'property', 'recordId' => (int) $record->getKey(),
+            ])->key(fn (Property $record): string => 'property-matches-'.$record->getKey())
+                ->columnSpanFull(),
             Section::make('مشخصات ملک')->schema([
                 TextEntry::make('code')->label('کد ملک'),
                 TextEntry::make('title')->label('عنوان ملک'),
@@ -152,10 +162,18 @@ abstract class PropertyResourceBase extends Resource
                         $record->district, $record->area_sqm === null ? null : $record->area_sqm.' متر',
                     ]))),
                     TextColumn::make('created_at')->label('تاریخ ثبت')->formatStateUsing(PersianDate::format(...))->color('gray'),
+                    TextColumn::make('match_count')->label('مشتریان منطبق')
+                        ->formatStateUsing(fn (mixed $state, Property $record): string => RelatedMatchPresentation::summary((int) $state, (int) $record->getAttribute('unread_match_count')))
+                        ->tooltip(fn (Property $record): string => RelatedMatchPresentation::accessibleSummary((int) $record->getAttribute('match_count'), (int) $record->getAttribute('unread_match_count')))
+                        ->badge()->color(fn (Property $record): string => (int) $record->getAttribute('unread_match_count') > 0 ? 'warning' : 'gray')
+                        ->url(fn (Property $record): string => static::getUrl('view', ['record' => $record]).'#related-matches'),
                 ])->space(2),
             ])
             ->contentGrid(['md' => 2, 'xl' => 3])
+            ->poll('30s')
             ->filters([
+                LocationFields::filter(),
+
                 SelectFilter::make('status')->label('وضعیت')->multiple()->options(PersianLabels::options(PropertyStatus::cases())),
                 SelectFilter::make('property_type')->label('نوع ملک')->multiple()->options(PersianLabels::options(PropertyType::selectable())),
                 SelectFilter::make('transaction_type')->label('نوع معامله')->options(PersianLabels::options(TransactionType::cases())),
@@ -180,7 +198,7 @@ abstract class PropertyResourceBase extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                ViewAction::make(), EditAction::make(), self::statusAction(), self::noteAction(), self::imageAction(),
+                ViewAction::make(), EditAction::make(), PublicationAction::make(), self::statusAction(), self::noteAction(), self::imageAction(),
                 Action::make('delete')->label('حذف')->color('danger')->requiresConfirmation()
                     ->visible(fn (Property $record): bool => ! $record->trashed() && Gate::allows('delete', $record))
                     ->action(function (Property $record): void {
@@ -204,7 +222,11 @@ abstract class PropertyResourceBase extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with('owners')->withoutGlobalScopes([SoftDeletingScope::class]);
+        return app(RelatedMatchQuery::class)->withSummaries(
+            parent::getEloquentQuery()->with('owners')->withoutGlobalScopes([SoftDeletingScope::class]),
+            static::actor(),
+            'property',
+        );
     }
 
     public static function getRecordRouteBindingEloquentQuery(): Builder

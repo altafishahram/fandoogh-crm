@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Api\V1\MatchNotification;
 
+use App\Application\Matching\Services\RelatedMatchQuery;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -25,6 +26,7 @@ final class MatchNotificationResource extends JsonResource
             'version' => $version,
             'title' => $this->resource->getAttribute('title'),
             'body' => $this->resource->getAttribute('body'),
+            'short_reason' => RelatedMatchQuery::shortReason($this->resource->getRelationValue('match')),
             'is_read' => $readVersion !== null && (int) $readVersion >= $version,
             'read_at' => self::dateValue($this->resource->getAttribute('read_at')),
             'created_at' => self::dateValue($this->resource->getAttribute('created_at')),

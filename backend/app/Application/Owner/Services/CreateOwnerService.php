@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Owner\Services;
 
+use App\Application\Geography\Services\LocationValidator;
 use App\Application\Owner\Contracts\OwnerRepositoryContract;
 use App\Application\Owner\Data\OwnerData;
 use App\Models\Owner;
@@ -20,7 +21,7 @@ final readonly class CreateOwnerService
     {
         $this->validator->validate($data);
 
-        return $this->owners->create($data->attributes() + [
+        return $this->owners->create(app(LocationValidator::class)->normalize($data->attributes()) + [
             'created_by_user_id' => $actor->getKey(),
         ]);
     }

@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $agency_id
+ * @property int|null $desired_province_id
+ * @property int|null $desired_county_id
+ * @property int|null $desired_city_id
  * @property int $assigned_agent_id
  * @property int $created_by_user_id
  * @property int|null $converted_property_id
@@ -39,6 +42,7 @@ class Customer extends Model
 
     /** @var list<string> */
     protected $fillable = [
+        'desired_province_id', 'desired_county_id', 'desired_city_id',
         'assigned_agent_id', 'created_by_user_id', 'first_name', 'last_name', 'mobile', 'phone',
         'email', 'preferred_contact_method', 'intent', 'status', 'preferred_property_types',
         'budget_min', 'budget_max', 'desired_city', 'desired_district', 'min_area_sqm',

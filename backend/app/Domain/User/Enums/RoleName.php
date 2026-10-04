@@ -15,6 +15,7 @@ enum RoleName: string
     {
         return match ($this) {
             self::SuperAdmin => [
+                PermissionName::AgenciesVerify,
                 PermissionName::PlatformDashboardView,
                 PermissionName::AgenciesView,
                 PermissionName::AgenciesCreate,
@@ -28,6 +29,7 @@ enum RoleName: string
                 PermissionName::ProfileUpdate,
             ],
             self::AgencyManager => [
+                PermissionName::PropertiesPublish,
                 PermissionName::AgencyDashboardView,
                 PermissionName::AgencySettingsView,
                 PermissionName::AgencySettingsUpdate,
@@ -116,6 +118,7 @@ enum RoleName: string
     public static function agentConfigurablePermissions(): array
     {
         return [
+            PermissionName::PropertiesPublish,
             ...self::agentDefaultPermissions(),
             PermissionName::PropertiesDelete,
             PermissionName::PropertiesRestore,

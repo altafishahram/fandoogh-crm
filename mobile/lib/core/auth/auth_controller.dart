@@ -79,7 +79,7 @@ final class AuthController extends Notifier<AuthState> {
         data: <String, Object?>{
           'email': email.trim().toLowerCase(),
           'password': password,
-          'device_name': 'ملک بان اندروید',
+          'device_name': 'دفتر املاکی اندروید',
         },
       );
       final payload = _data(response.data);
@@ -115,7 +115,7 @@ final class AuthController extends Notifier<AuthState> {
           'current_password': currentPassword,
           'password': password,
           'password_confirmation': password,
-          'device_name': 'ملک بان اندروید',
+          'device_name': 'دفتر املاکی اندروید',
         },
       );
       final payload = _data(response.data);

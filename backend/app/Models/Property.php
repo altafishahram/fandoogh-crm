@@ -23,6 +23,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $agency_id
+ * @property int|null $province_id
+ * @property int|null $county_id
+ * @property int|null $city_id
  * @property string $code
  * @property string $currency_code
  * @property PropertyType $property_type
@@ -45,6 +48,7 @@ class Property extends Model
 
     /** @var list<string> */
     protected $fillable = [
+        'province_id', 'county_id', 'city_id',
         'title', 'description', 'property_type', 'transaction_type', 'status', 'assigned_agent_id',
         'created_by_user_id', 'sale_price', 'deposit_amount', 'monthly_rent', 'area_sqm', 'bedrooms',
         'bathrooms', 'floor_number', 'total_floors', 'year_built', 'parking_spaces', 'has_storage_room',

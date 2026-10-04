@@ -1,3 +1,4 @@
+import 'package:fandoogh_crm/features/geography/geography.dart';
 import 'dart:io';
 
 import 'package:fandoogh_crm/core/auth/auth_controller.dart';
@@ -9,6 +10,7 @@ import 'package:fandoogh_crm/core/storage/android_media_picker.dart';
 import 'package:fandoogh_crm/core/widgets/choice_field.dart';
 import 'package:fandoogh_crm/core/widgets/persian_date_field.dart';
 import 'package:fandoogh_crm/features/properties/data/property_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -60,6 +62,7 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
   bool _loading = false;
   bool _saving = false;
   bool _updatingPrice = false;
+  RegionSelection _region = const RegionSelection();
   String? _error;
   PropertyRecord? _original;
   final List<String> _images = <String>[];
@@ -131,6 +134,7 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
   @override
   void initState() {
     super.initState();
+    if (!_editing) _region = agencyRegion(ref);
     _stepAnimation = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 260),
@@ -496,7 +500,16 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
           ),
       ],
       _gap,
-      _text('city', 'شهر', required: true),
+      RegionFields(
+        value: _region,
+        requiredCity: true,
+        legacyCity: _editing ? _c('city').text : null,
+        onChanged: (region) => setState(() {
+          _region = region;
+          _c('city').text = region.cityName ?? '';
+          _c('district').clear();
+        }),
+      ),
       _gap,
       _text('district', 'محله'),
       _gap,
@@ -1172,6 +1185,7 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
           .read(propertyRepositoryProvider)
           .find(widget.propertyId!);
       _original = item;
+      _region = RegionSelection.fromJson(item.data, prefix: '');
       for (final entry in <String, Object?>{
         'title': item.data['title'],
         'description': item.data['description'],
@@ -1310,7 +1324,8 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
       'minimum_deposit': _transaction == 'rent' && _convertible
           ? _v('minimum_deposit')
           : null,
-      'city': _raw('city'),
+      'city': _region.cityName ?? _raw('city'),
+      ..._region.toJson(prefix: ''),
       'district': _textOrNull('district'),
       'street_address': _raw('address'),
       'plaque': _textOrNull('plaque'),
@@ -1408,6 +1423,7 @@ final class _PropertyFormPageState extends ConsumerState<PropertyFormPage>
         }
       }
       ref.invalidate(propertiesProvider);
+      ref.read(matchDataRevisionProvider.notifier).refresh();
       await ref.read(syncControllerProvider.notifier).refreshQueue();
       if (mounted) {
         context.pop(true);

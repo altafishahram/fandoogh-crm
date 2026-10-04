@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>دسترسی غیرمجاز - ملک بان</title>
+    <title>دسترسی غیرمجاز - {{ config('app.name') }}</title>
     <style>
         @font-face {
             font-family: 'Vazirmatn';
@@ -83,7 +83,7 @@
     <p>حساب شما اجازه ورود به این پنل را ندارد.</p>
     <p class="hint">فعال‌بودن حساب و آژانس را بررسی کنید و مطمئن شوید از نشانی پنل مربوط به نقش خود وارد شده‌اید.</p>
     <a href="{{ request()->url() }}">تلاش دوباره</a>
-    <footer>ملک بان · طراحی‌شده توسط فندوق استودیو</footer>
+    <footer>{{ config('app.name') }} · طراحی‌شده توسط فندوق استودیو</footer>
 </main>
 </body>
 </html>

@@ -6,6 +6,7 @@ namespace App\Application\Customer\Services;
 
 use App\Application\Customer\Contracts\CustomerRepositoryContract;
 use App\Application\Customer\Data\CreateCustomerData;
+use App\Application\Geography\Services\LocationValidator;
 use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Shared\Services\AgentAssignmentValidator;
 use App\Domain\Customer\Enums\CustomerHistoryAction;
@@ -28,7 +29,7 @@ final readonly class CreateCustomerService
 
     public function execute(User $actor, CreateCustomerData $data): Customer
     {
-        $attributes = $data->attributes();
+        $attributes = app(LocationValidator::class)->normalize($data->attributes(), 'desired_');
         $this->validator->validate($attributes);
         $agentId = $data->fullName !== null
             ? null

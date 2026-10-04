@@ -18,6 +18,9 @@ final class MatchNotification {
     this.customerId,
     this.score,
     this.matchMode,
+    this.shortReason = '',
+    this.propertyRank,
+    this.customerRank,
     this.createdAt,
     this.updatedAt,
     this.readAt,
@@ -39,6 +42,9 @@ final class MatchNotification {
   final int? customerId;
   final double? score;
   final String? matchMode;
+  final String shortReason;
+  final int? propertyRank;
+  final int? customerRank;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? readAt;
@@ -58,6 +64,7 @@ final class MatchNotification {
     );
     final property = _asMap(json['property'] ?? match?['property']);
     final customer = _asMap(json['customer'] ?? match?['customer']);
+    final financial = _asMap(match?['financial_range']);
     final readAt = _asDateTime(
       json['read_at'] ?? json['readAt'] ?? json['readAtUtc'],
     );
@@ -67,8 +74,11 @@ final class MatchNotification {
       title: _asText(json['title']) ?? 'تطبیق جدید',
       body: _asText(json['body'] ?? json['message']) ?? '',
       isRead:
-          _asBool(json['is_read'] ?? json['isRead'] ?? json['read']) ||
-          readAt != null,
+          json.containsKey('is_read') ||
+              json.containsKey('isRead') ||
+              json.containsKey('read')
+          ? _asBool(json['is_read'] ?? json['isRead'] ?? json['read'])
+          : readAt != null,
       matchId: _asInt(
         json['match_id'] ?? json['property_customer_match_id'] ?? match?['id'],
       ),
@@ -80,21 +90,33 @@ final class MatchNotification {
       ),
       score: _asDouble(json['score'] ?? match?['score']),
       matchMode: _asText(json['match_mode'] ?? match?['match_mode']),
+      shortReason:
+          _asText(json['short_reason'] ?? match?['short_reason']) ?? '',
+      propertyRank: _asInt(json['property_rank'] ?? match?['property_rank']),
+      customerRank: _asInt(json['customer_rank'] ?? match?['customer_rank']),
       createdAt: _asDateTime(json['created_at'] ?? json['createdAt']),
       updatedAt: _asDateTime(json['updated_at'] ?? json['updatedAt']),
       readAt: readAt,
       version: _asInt(json['version'] ?? json['notification_version']),
       matchedDepositMin: _asDouble(
-        json['matched_deposit_min'] ?? match?['matched_deposit_min'],
+        json['matched_deposit_min'] ??
+            match?['matched_deposit_min'] ??
+            financial?['deposit_min'],
       ),
       matchedDepositMax: _asDouble(
-        json['matched_deposit_max'] ?? match?['matched_deposit_max'],
+        json['matched_deposit_max'] ??
+            match?['matched_deposit_max'] ??
+            financial?['deposit_max'],
       ),
       matchedRentMin: _asDouble(
-        json['matched_rent_min'] ?? match?['matched_rent_min'],
+        json['matched_rent_min'] ??
+            match?['matched_rent_min'] ??
+            financial?['rent_min'],
       ),
       matchedRentMax: _asDouble(
-        json['matched_rent_max'] ?? match?['matched_rent_max'],
+        json['matched_rent_max'] ??
+            match?['matched_rent_max'] ??
+            financial?['rent_max'],
       ),
       property: property,
       customer: customer,
@@ -154,6 +176,9 @@ final class MatchNotification {
       customerId: customerId,
       score: score,
       matchMode: matchMode,
+      shortReason: shortReason,
+      propertyRank: propertyRank,
+      customerRank: customerRank,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       readAt: readAt ?? this.readAt,
@@ -178,6 +203,9 @@ final class MatchNotification {
     'customer_id': customerId,
     'score': score,
     'match_mode': matchMode,
+    'short_reason': shortReason,
+    'property_rank': propertyRank,
+    'customer_rank': customerRank,
     'created_at': createdAt?.toUtc().toIso8601String(),
     'updated_at': (updatedAt ?? createdAt)?.toUtc().toIso8601String(),
     'version': version,
@@ -228,6 +256,8 @@ final class MatchNotificationPage {
     required this.lastPage,
     this.unreadCount,
     this.fromCache = false,
+    this.total,
+    this.perPage,
   });
 
   final List<MatchNotification> items;
@@ -235,6 +265,8 @@ final class MatchNotificationPage {
   final int lastPage;
   final int? unreadCount;
   final bool fromCache;
+  final int? total;
+  final int? perPage;
 
   bool get hasMore => currentPage < lastPage;
 
@@ -280,6 +312,8 @@ final class MatchNotificationPage {
       lastPage: lastPage,
       unreadCount: unreadCount,
       fromCache: fromCache,
+      total: _intFrom(meta['total'] ?? dataMap?['total']),
+      perPage: _intFrom(meta['per_page'] ?? dataMap?['per_page']),
     );
   }
 
@@ -289,12 +323,16 @@ final class MatchNotificationPage {
     int? lastPage,
     int? unreadCount,
     bool? fromCache,
+    int? total,
+    int? perPage,
   }) => MatchNotificationPage(
     items: items ?? this.items,
     currentPage: currentPage ?? this.currentPage,
     lastPage: lastPage ?? this.lastPage,
     unreadCount: unreadCount ?? this.unreadCount,
     fromCache: fromCache ?? this.fromCache,
+    total: total ?? this.total,
+    perPage: perPage ?? this.perPage,
   );
 
   static int? _intFrom(Object? value) {

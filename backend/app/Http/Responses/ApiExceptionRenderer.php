@@ -28,6 +28,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -136,6 +137,7 @@ final class ApiExceptionRenderer
                 'ساختار درخواست معتبر نیست.',
                 null,
             ],
+            $exception instanceof HttpExceptionInterface => $this->httpError($exception->getStatusCode()),
             default => [
                 500,
                 ApiErrorCode::InternalError,
@@ -164,6 +166,25 @@ final class ApiExceptionRenderer
         return response()
             ->json(['error' => $error], $status)
             ->header(AssignRequestId::HEADER, $requestId);
+    }
+
+    /** @return array{int, ApiErrorCode, string, null} */
+    private function httpError(int $status): array
+    {
+        [$code, $message] = match ($status) {
+            400 => [ApiErrorCode::BadRequest, 'ساختار درخواست معتبر نیست.'],
+            401 => [ApiErrorCode::Unauthenticated, 'برای ادامه باید وارد حساب کاربری شوید.'],
+            403 => [ApiErrorCode::Forbidden, 'اجازه انجام این عملیات را ندارید.'],
+            404 => [ApiErrorCode::ResourceNotFound, 'اطلاعات درخواستی پیدا نشد.'],
+            409 => [ApiErrorCode::DomainConflict, 'این عملیات با وضعیت فعلی اطلاعات سازگار نیست.'],
+            413 => [ApiErrorCode::FileTooLarge, 'حجم فایل بیشتر از حد مجاز است.'],
+            415 => [ApiErrorCode::UnsupportedMediaType, 'نوع فایل تصویری پشتیبانی نمی‌شود.'],
+            422 => [ApiErrorCode::ValidationFailed, 'اطلاعات واردشده معتبر نیست.'],
+            429 => [ApiErrorCode::RateLimited, 'تعداد درخواست‌ها بیش از حد مجاز است.'],
+            default => [ApiErrorCode::InternalError, 'خطای پیش‌بینی‌نشده‌ای رخ داد؛ لطفاً دوباره تلاش کنید.'],
+        };
+
+        return [$status, $code, $message, null];
     }
 
     private function requestId(Request $request): string

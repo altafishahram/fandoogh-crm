@@ -12,6 +12,12 @@ abstract class IdentityTestCase extends TestCase
 {
     use RefreshDatabase;
 
+    /** @return void */
+    protected function beforeRefreshingDatabase()
+    {
+        SafeTestEnvironment::assert($this->app, (string) getenv('DB_DATABASE'));
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

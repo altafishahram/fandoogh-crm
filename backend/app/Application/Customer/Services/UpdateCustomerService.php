@@ -6,6 +6,7 @@ namespace App\Application\Customer\Services;
 
 use App\Application\Customer\Contracts\CustomerRepositoryContract;
 use App\Application\Customer\Data\UpdateCustomerData;
+use App\Application\Geography\Services\LocationValidator;
 use App\Application\Matching\Services\MatchingRebuildDispatcher;
 use App\Application\Shared\Services\AgentAssignmentValidator;
 use App\Application\Shared\Services\OptimisticLock;
@@ -41,7 +42,7 @@ final readonly class UpdateCustomerService
             } else {
                 $this->optimisticLock->assertCurrent($locked, $data->expectedUpdatedAt);
             }
-            $attributes = $data->attributes;
+            $attributes = app(LocationValidator::class)->normalize($data->attributes, 'desired_');
 
             if ($actor->roleName() === RoleName::Agent && array_key_exists('assigned_agent_id', $attributes)) {
                 throw new DomainConflictException('کارشناس اجازه واگذاری مشتری به کارشناس دیگر را ندارد.');

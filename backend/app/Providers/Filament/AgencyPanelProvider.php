@@ -35,7 +35,7 @@ final class AgencyPanelProvider extends PanelProvider
             ->pages([Dashboard::class])
             ->discoverWidgets(in: app_path('Filament/Agency/Widgets'), for: 'App\\Filament\\Agency\\Widgets')
             ->middleware($this->middleware())
-            ->authMiddleware([Authenticate::class, EstablishTenantContext::class, EnsureWebPasswordChanged::class]);
+            ->authMiddleware([Authenticate::class, EstablishTenantContext::class, EnsureWebPasswordChanged::class], isPersistent: true);
     }
 
     /** @return list<class-string> */

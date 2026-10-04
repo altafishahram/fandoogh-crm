@@ -28,6 +28,8 @@ final class PanelAccessTest extends DomainTestCase
         $this->actingAs($manager)->get('/agency')
             ->assertForbidden()
             ->assertSee('دسترسی غیرمجاز است')
+            ->assertSee('دفتر املاکی')
+            ->assertDontSee('ملک بان')
             ->assertSee('فعال‌بودن حساب و آژانس را بررسی کنید')
             ->assertSee('طراحی‌شده توسط فندوق استودیو');
     }

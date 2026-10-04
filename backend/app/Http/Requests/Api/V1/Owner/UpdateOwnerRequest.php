@@ -41,6 +41,7 @@ final class UpdateOwnerRequest extends StoreOwnerRequest
             'address_line_1' => $owner->address_line_1,
             'address_line_2' => $owner->address_line_2,
             'city' => $owner->city,
+            'province_id' => $owner->province_id, 'county_id' => $owner->county_id, 'city_id' => $owner->city_id,
             'province' => $owner->province,
             'postal_code' => $owner->postal_code,
             'notes' => $owner->notes,
@@ -52,6 +53,9 @@ final class UpdateOwnerRequest extends StoreOwnerRequest
             $data['mobile'], $data['phone'], $data['email'], $data['identity_number'],
             $data['address_line_1'], $data['address_line_2'], $data['city'], $data['province'],
             $data['postal_code'], $data['notes'],
+            isset($data['province_id']) ? (int) $data['province_id'] : null,
+            isset($data['county_id']) ? (int) $data['county_id'] : null,
+            isset($data['city_id']) ? (int) $data['city_id'] : null,
         );
     }
 

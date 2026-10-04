@@ -2,16 +2,39 @@ import 'package:fandoogh_crm/core/auth/auth_controller.dart';
 import 'package:fandoogh_crm/core/localization/persian_date.dart';
 import 'package:fandoogh_crm/core/network/api_client.dart';
 import 'package:fandoogh_crm/core/network/api_repository.dart';
+import 'package:fandoogh_crm/core/offline/offline_store.dart';
 import 'package:fandoogh_crm/core/theme/app_theme.dart';
 import 'package:fandoogh_crm/core/widgets/async_content.dart';
 import 'package:fandoogh_crm/features/match_notifications/data/match_notification_repository.dart';
+import 'package:fandoogh_crm/features/match_notifications/data/match_refresh.dart';
 import 'package:fandoogh_crm/features/properties/presentation/widgets/property_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-final dashboardProvider = FutureProvider<Map<String, dynamic>>((ref) {
-  return ApiRepository(ref.watch(apiClientProvider)).getOne('/dashboard');
+final dashboardProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  ref.watch(matchSessionProvider);
+  ref.watch(matchDataRevisionProvider);
+  final store = ref.watch(offlineStoreProvider).scoped();
+  try {
+    final result = await ApiRepository(
+      ref.watch(apiClientProvider),
+    ).getOne('/dashboard');
+    if (store.isConfigured) {
+      await store.mergeRecords('dashboard', <Map<String, dynamic>>[
+        <String, dynamic>{...result, 'id': 'dashboard'},
+      ]);
+    }
+    return result;
+  } catch (error) {
+    final code = apiFailureFrom(error).code;
+    if (store.isConfigured &&
+        (code == 'NETWORK_UNAVAILABLE' || code == 'NETWORK_TIMEOUT')) {
+      final cached = await store.records('dashboard');
+      if (cached.isNotEmpty) return cached.first;
+    }
+    rethrow;
+  }
 });
 
 final class DashboardPage extends ConsumerWidget {
@@ -55,6 +78,20 @@ final class DashboardPage extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate(<Widget>[
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.storefront_outlined),
+                          title: const Text('آگهی‌های عمومی و همکاری آژانس‌ها'),
+                          onTap: () => context.push('/marketplace'),
+                        ),
+                      ),
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.chat_bubble_outline),
+                          title: const Text('گفت‌وگوهای آگهی‌ها'),
+                          onTap: () => context.push('/conversations'),
+                        ),
+                      ),
                       _SearchLauncher(onTap: () => context.push('/search')),
                       const SizedBox(height: 18),
                       _MetricsRow(data: data),
@@ -131,7 +168,7 @@ final class _DashboardHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          'ملک بان',
+                          'دفتر املاکی',
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 color: colors.onPrimary,
@@ -172,7 +209,7 @@ final class _DashboardHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'به داشبورد ملک بان خوش آمدید',
+                'به داشبورد دفتر املاکی خوش آمدید',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.onPrimary.withValues(alpha: .82),
                 ),

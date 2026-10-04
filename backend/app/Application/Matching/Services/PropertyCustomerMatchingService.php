@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
 
 final class PropertyCustomerMatchingService
 {
-    private const MAX_MATCHES = 10;
+    private const MAX_MATCHES = 20;
 
     private const AREA_WEIGHT = 25.0;
 
@@ -84,7 +84,7 @@ final class PropertyCustomerMatchingService
             $propertyRank = $propertyRanks[$key] ?? null;
             $customerRank = $customerRanks[$key] ?? null;
 
-            if ($propertyRank === null || $customerRank === null) {
+            if ($propertyRank === null && $customerRank === null) {
                 continue;
             }
 
@@ -244,7 +244,7 @@ final class PropertyCustomerMatchingService
         return $ranks;
     }
 
-    /** @param array<string, array{0: MatchCandidate, 1: int, 2: int}> $keep
+    /** @param array<string, array{0: MatchCandidate, 1: ?int, 2: ?int}> $keep
      * @param  Collection<int, Property>  $properties
      * @param  Collection<int, Customer>  $customers
      */
@@ -359,6 +359,10 @@ final class PropertyCustomerMatchingService
 
     private function locationMatches(Property $property, Customer $customer): bool
     {
+        if ($customer->desired_city_id !== null && $property->city_id !== null
+            && (int) $customer->desired_city_id !== (int) $property->city_id) {
+            return false;
+        }
         foreach ([['desired_city', 'city'], ['desired_district', 'district']] as [$customerField, $propertyField]) {
             $wanted = $this->normalText($customer->getAttribute($customerField));
             if ($wanted !== '' && $wanted !== $this->normalText($property->getAttribute($propertyField))) {

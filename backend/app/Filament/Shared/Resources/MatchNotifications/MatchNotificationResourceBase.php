@@ -6,16 +6,20 @@ namespace App\Filament\Shared\Resources\MatchNotifications;
 
 use App\Application\Matching\Services\MarkMatchNotificationReadService;
 use App\Filament\Shared\Support\PersianDate;
+use App\Filament\Shared\Support\ReadMatchNotificationOnExit;
 use App\Models\MatchNotification;
 use App\Models\MatchNotificationRead;
 use App\Models\User;
 use BackedEnum;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification as FilamentNotification;
+use Filament\Panel;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
@@ -26,6 +30,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Throwable;
 
 abstract class MatchNotificationResourceBase extends Resource
@@ -42,9 +47,22 @@ abstract class MatchNotificationResourceBase extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    public static function routes(Panel $panel, ?Closure $registerPageRoutes = null): void
+    {
+        parent::routes($panel, function () use ($registerPageRoutes): void {
+            Route::post('/{record}/read-on-exit', ReadMatchNotificationOnExit::class)
+                ->whereNumber('record')->name('read-on-exit');
+            $registerPageRoutes?->__invoke();
+        });
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
+            View::make('filament.shared.related-match-read-on-exit')->viewData(fn (MatchNotification $record): array => [
+                'readOnExitUrl' => static::getUrl('read-on-exit', ['record' => $record]),
+                'notificationVersion' => (int) $record->version,
+            ])->columnSpanFull(),
             Section::make('اعلان تطبیق')->schema([
                 TextEntry::make('title')->label('عنوان')->weight(FontWeight::Bold),
                 TextEntry::make('body')->label('توضیحات')->placeholder('—')->columnSpanFull(),
@@ -249,7 +267,7 @@ abstract class MatchNotificationResourceBase extends Resource
         return $actor;
     }
 
-    private static function matchModeLabel(mixed $mode): string
+    public static function matchModeLabel(mixed $mode): string
     {
         $value = $mode instanceof BackedEnum ? $mode->value : $mode;
 

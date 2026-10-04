@@ -18,6 +18,7 @@ final class PermissionLabels
             PermissionName::OwnersUpdate->value => 'ویرایش اطلاعات مالک ملک',
             PermissionName::PropertiesView->value => 'مشاهده املاک',
             PermissionName::PropertiesCreate->value => 'ثبت ملک',
+            PermissionName::PropertiesPublish->value => 'انتشار ملک در بازار عمومی و همکاری',
             PermissionName::PropertiesUpdate->value => 'ویرایش ملک',
             PermissionName::PropertiesDelete->value => 'حذف ملک',
             PermissionName::PropertiesRestore->value => 'بازیابی ملک',

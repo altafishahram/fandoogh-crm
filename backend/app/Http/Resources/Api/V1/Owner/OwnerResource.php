@@ -26,6 +26,7 @@ final class OwnerResource extends JsonResource
             'address_line_1' => $this->resource->address_line_1,
             'address_line_2' => $this->resource->address_line_2,
             'city' => $this->resource->city,
+            'province_id' => $this->resource->province_id, 'county_id' => $this->resource->county_id, 'city_id' => $this->resource->city_id,
             'province' => $this->resource->province,
             'postal_code' => $this->resource->postal_code,
             'notes' => $this->resource->notes,

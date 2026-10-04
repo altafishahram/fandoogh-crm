@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Api\V1\Property;
 
+use App\Application\Matching\Services\RelatedMatchQuery;
 use App\Application\Property\Services\PropertyPricingCalculator;
 use App\Http\Resources\Api\V1\Owner\OwnerSummaryResource;
 use Illuminate\Http\Request;
@@ -43,6 +44,7 @@ final class PropertyResource extends JsonResource
             'land_frontage' => $this->resource->land_frontage,
             'transaction_type' => $this->resource->transaction_type->value,
             'status' => $this->resource->status->value,
+            'match_summary' => RelatedMatchQuery::summaryOf($this->resource),
             'cover_image_url' => $this->coverImageUrl(),
             'assigned_agent_id' => $this->resource->assigned_agent_id,
             'currency_code' => $this->resource->currency_code,
@@ -80,6 +82,9 @@ final class PropertyResource extends JsonResource
             'has_jacuzzi' => $this->resource->has_jacuzzi,
             'has_sauna' => $this->resource->has_sauna,
             'city' => $this->resource->city,
+            'province_id' => $this->resource->province_id,
+            'county_id' => $this->resource->county_id,
+            'city_id' => $this->resource->city_id,
             'district' => $this->resource->district,
             'street_address' => $this->resource->street_address,
             'plaque' => $this->resource->plaque,
